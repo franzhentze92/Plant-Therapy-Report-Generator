@@ -35,9 +35,16 @@ function isString(val: any): val is string {
 }
 
 // Helper to assign status
-function getStatus(current: number, ideal: number): 'low' | 'optimal' | 'high' {
-  if (current < 0.9 * ideal) return 'low';
-  if (current > 1.1 * ideal) return 'high';
+function getStatus(current: number, ideal: number, ideal_range?: [number, number]): 'low' | 'optimal' | 'high' {
+  if (ideal_range && Array.isArray(ideal_range) && ideal_range.length === 2) {
+    if (current < ideal_range[0]) return 'low';
+    else if (current > ideal_range[1]) return 'high';
+    else return 'optimal';
+  } else if (typeof ideal === 'number' && isFinite(ideal) && ideal !== 0) {
+    if (current < 0.9 * ideal) return 'low';
+    else if (current > 1.1 * ideal) return 'high';
+    else return 'optimal';
+  }
   return 'optimal';
 }
 
@@ -48,16 +55,16 @@ let mockNutrients = [
   { name: 'TEC', current: 6.35, ideal: 6.35, unit: '', category: 'albrecht' },
   { name: 'Paramagnetism', current: 170, ideal: 600, unit: 'cgs', category: 'albrecht' },
   { name: 'pH-level (1:5 water)', current: 7.10, ideal: 6.7, unit: '', category: 'albrecht' },
-  { name: 'Organic Matter (Calc)', current: 2.26, ideal: 6, unit: '%', category: 'albrecht' },
+  { name: 'Organic Matter (Calc)', current: 2.26, ideal: 6, ideal_range: [5.6, 8.4], unit: '%', category: 'albrecht' },
   { name: 'Organic Carbon (LECO)', current: 1.29, ideal: 3.5, unit: '%', category: 'albrecht' },
   { name: 'Conductivity (1:5 water)', current: 0.06, ideal: 0.15, unit: 'mS/cm', category: 'albrecht' },
   { name: 'Ca/Mg Ratio', current: 5.11, ideal: 4, unit: ':1', category: 'albrecht' },
   { name: 'Nitrate-N (KCl)', current: 9.70, ideal: 15, unit: 'ppm', category: 'albrecht' },
   { name: 'Ammonium-N (KCl)', current: 0.60, ideal: 15, unit: 'ppm', category: 'albrecht' },
-  { name: 'Phosphorus (Mehlich III)', current: 89, ideal: 60, unit: 'ppm', category: 'albrecht' },
-  { name: 'Calcium (Mehlich III)', current: 1030, ideal: 1317, unit: 'ppm', category: 'albrecht' },
-  { name: 'Magnesium (Mehlich III)', current: 121, ideal: 122, unit: 'ppm', category: 'albrecht' },
-  { name: 'Potassium (Mehlich III)', current: 66.8, ideal: 111.5, unit: 'ppm', category: 'albrecht' },
+  { name: 'Phosphorus (Mehlich III)', current: 89, ideal: 60, ideal_range: [45, 75], unit: 'ppm', category: 'albrecht' },
+  { name: 'Calcium (Mehlich III)', current: 1030, ideal: 1317, ideal_range: [1200, 1500], unit: 'ppm', category: 'albrecht' },
+  { name: 'Magnesium (Mehlich III)', current: 121, ideal: 122, ideal_range: [100, 150], unit: 'ppm', category: 'albrecht' },
+  { name: 'Potassium (Mehlich III)', current: 66.8, ideal: 111.5, ideal_range: [90, 130], unit: 'ppm', category: 'albrecht' },
   { name: 'Sodium (Mehlich III)', current: 0, ideal: 14.5, unit: 'ppm', category: 'albrecht' },
   { name: 'Sulfur (KCl)', current: 1, ideal: 40, unit: 'ppm', category: 'albrecht' },
   { name: 'Aluminium', current: 2.2, ideal: 1.5, unit: 'ppm', category: 'albrecht' },
@@ -89,7 +96,7 @@ let mockNutrients = [
     ...n,
     current,
     ideal,
-    status: getStatus(current, ideal)
+    status: getStatus(current, ideal, n.ideal_range as [number, number] | undefined)
   };
 });
 console.log('mockNutrients after < check:', mockNutrients);
@@ -2135,12 +2142,16 @@ const SoilReportGenerator: React.FC = () => {
   const [showColorPopup, setShowColorPopup] = React.useState(false);
 
   // Always set genericName using this mapping
-  const unifiedNutrients = getUnifiedNutrients(fixedNutrientData).map(n => {
+  const unifiedNutrients = dedupedUnifiedNutrientRows.map(n => {
     const genericName = unifiedToGeneric[n.name] || n.name;
     let status = 'optimal';
-    if (typeof n.ideal === 'number' && isFinite(n.ideal) && n.ideal !== 0) {
-      if (n.current < 0.75 * n.ideal) status = 'low';
-      else if (n.current > 1.25 * n.ideal) status = 'high';
+    if (n.ideal_range && Array.isArray(n.ideal_range) && n.ideal_range.length === 2) {
+      if (n.current < n.ideal_range[0]) status = 'low';
+      else if (n.current > n.ideal_range[1]) status = 'high';
+      else status = 'optimal';
+    } else if (typeof n.ideal === 'number' && isFinite(n.ideal) && n.ideal !== 0) {
+      if (n.current < 0.9 * n.ideal) status = 'low';
+      else if (n.current > 1.1 * n.ideal) status = 'high';
     }
     return { ...n, genericName, status };
   });
