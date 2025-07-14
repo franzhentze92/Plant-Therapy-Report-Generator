@@ -564,14 +564,29 @@ def generate_soil_comments():
 As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's organic matter status for a Soil Therapy Report.
 
 ORGANIC MATTER DATA: {', '.join([
-    f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Ideal Range: {n.get('ideal_range', [None, None])[0]}–{n.get('ideal_range', [None, None])[1]} {n.get('unit', '')})" if n.get('ideal_range') else f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Target: {n.get('ideal', 'N/A')})" for n in nutrients_data
+    f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Ideal Range: {n.get('ideal_range', [None, None])[0]}–{n.get('ideal_range', [None, None])[1]} {n.get('unit', '')})"
+    if n.get('ideal_range') else
+    f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')}"
+    for n in nutrients_data if 'organic matter' in n.get('name', '').lower()
 ])}
 
 DEFICIENT: {', '.join(deficient) if deficient else 'None'}
 OPTIMAL: {', '.join(optimal) if optimal else 'None'}
 EXCESS: {', '.join(excess) if excess else 'None'}
 
-IMPORTANT: Only call a nutrient 'deficient' if its value is below the lower bound of the ideal range, and 'excess' if above the upper bound. If it is within the range, call it 'optimal'.
+CRITICAL INSTRUCTIONS:
+- Focus ONLY on ORGANIC MATTER values, NOT organic carbon values
+- Use ONLY the ideal range for determining organic matter status
+- A nutrient is "deficient" if current value < lower bound of ideal range
+- A nutrient is "excess" if current value > upper bound of ideal range  
+- A nutrient is "optimal" if current value is within the ideal range (including bounds)
+- IGNORE any target values - use only the ideal range
+- NEVER mention "organic carbon" or "LECO" in your response - only discuss "organic matter"
+
+EXAMPLE:
+If the organic matter value is 5.95% and the ideal range is 4.0–10.0%, you MUST call it "optimal" (not deficient).
+If the value is 2.0% and the ideal range is 4.0–10.0%, you MUST call it "deficient."
+If the value is 12.0% and the ideal range is 4.0–10.0%, you MUST call it "excess."
 
 Provide a 2-3 sentence analysis focusing on:
 - **Organic matter levels** and their implications for soil health and fertility
@@ -582,17 +597,29 @@ Use professional soil science terminology and bold formatting for key terms. Foc
             'cec': f"""
 As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's Cation Exchange Capacity (CEC) for a Soil Therapy Report.
 
-CEC DATA: {', '.join([f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Target: {n.get('ideal', 'N/A')})" for n in nutrients_data])}
+CEC DATA: {', '.join([
+    f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')}"
+    for n in nutrients_data if 'cec' in n.get('name', '').lower() or 'cation exchange' in n.get('name', '').lower()
+])}
 
 DEFICIENT: {', '.join(deficient) if deficient else 'None'}
 OPTIMAL: {', '.join(optimal) if optimal else 'None'}
 EXCESS: {', '.join(excess) if excess else 'None'}
 
+CRITICAL INSTRUCTIONS:
+- Focus ONLY on CEC (Cation Exchange Capacity) values
+- CEC is a soil property that indicates the soil's ability to hold and exchange cations
+- CEC interpretation depends on soil type and texture, not fixed ideal ranges
+- CEC is measured in meq/100g or cmol/kg units
+- Low CEC (< 10 meq/100g): Sandy soils, low nutrient retention, requires more frequent fertilization
+- Medium CEC (10-25 meq/100g): Loamy soils, good nutrient retention, balanced fertilization
+- High CEC (> 25 meq/100g): Clay soils, excellent nutrient retention, efficient fertilizer use
+
 Provide a 2-3 sentence analysis focusing on:
-- **CEC levels** and their impact on **nutrient retention** and **soil fertility**
-- Implications for **fertilizer efficiency** and **nutrient availability** to plants
-- Brief mention of **soil management** considerations for optimal crop nutrition
-Use professional soil science terminology and bold formatting for key terms. Focus on practical implications for fertilizer management.
+- **CEC levels** and their implications for **soil texture** and **nutrient retention capacity**
+- Impact on **fertilizer efficiency** and **nutrient availability** to plants
+- Brief mention of **soil management** considerations based on CEC characteristics
+Use professional soil science terminology and bold formatting for key terms. Focus on practical implications for fertilizer management and soil fertility.
 """,
             'soilPh': f"""
 As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's pH status for a Soil Therapy Report.
@@ -612,11 +639,31 @@ Use professional soil science terminology and bold formatting for key terms. Foc
             'baseSaturation': f"""
 As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's base saturation for a Soil Therapy Report.
 
-BASE SATURATION DATA: {', '.join([f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Target: {n.get('ideal', 'N/A')})" for n in nutrients_data])}
+BASE SATURATION DATA: {', '.join([
+    f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Ideal Range: {n.get('ideal_range', [None, None])[0]}–{n.get('ideal_range', [None, None])[1]} {n.get('unit', '')})"
+    if n.get('ideal_range') else
+    f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')}"
+    for n in nutrients_data if 'base saturation' in n.get('name', '').lower() or 'ca' in n.get('name', '').lower() or 'mg' in n.get('name', '').lower() or 'k' in n.get('name', '').lower() or 'na' in n.get('name', '').lower()
+])}
 
 DEFICIENT: {', '.join(deficient) if deficient else 'None'}
 OPTIMAL: {', '.join(optimal) if optimal else 'None'}
 EXCESS: {', '.join(excess) if excess else 'None'}
+
+CRITICAL INSTRUCTIONS:
+- Focus ONLY on base saturation values (Ca, Mg, K, Na percentages)
+- Use ONLY the ideal range for determining base saturation status
+- A nutrient is "deficient" if current value < lower bound of ideal range
+- A nutrient is "excess" if current value > upper bound of ideal range  
+- A nutrient is "optimal" if current value is within the ideal range (including bounds)
+- IGNORE any target values - use only the ideal range
+- Base saturation is measured as percentage of CEC occupied by base cations
+- Ideal Ca: 65-80%, Mg: 10-20%, K: 2-5%, Na: < 3%
+
+EXAMPLE:
+If the Ca saturation is 70% and the ideal range is 65-80%, you MUST call it "optimal."
+If the Ca saturation is 50% and the ideal range is 65-80%, you MUST call it "deficient."
+If the Ca saturation is 85% and the ideal range is 65-80%, you MUST call it "excess."
 
 Provide a 2-3 sentence analysis focusing on:
 - **Base saturation levels** and their implications for **soil fertility** and **nutrient balance**

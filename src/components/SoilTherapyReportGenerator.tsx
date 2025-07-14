@@ -2648,6 +2648,15 @@ const SoilReportGenerator: React.FC = () => {
       const newComments = {};
       for (const [section, names] of Object.entries(sectionNutrientMap)) {
         const sectionNutrients = sourceNutrients.filter(n => names.includes(n.name));
+        
+        // Debug logging for organicMatter section
+        if (section === 'organicMatter') {
+          console.log('DEBUG - Organic Matter section nutrients:', sectionNutrients);
+          sectionNutrients.forEach(n => {
+            console.log(`  ${n.name}: current=${n.current}, ideal=${n.ideal}, ideal_range=${n.ideal_range}`);
+          });
+        }
+        
         const nutrientsWithStatus = sectionNutrients.map(n => {
           let status = 'optimal';
           if (n.ideal_range && Array.isArray(n.ideal_range) && n.ideal_range.length === 2) {
@@ -2660,6 +2669,15 @@ const SoilReportGenerator: React.FC = () => {
           }
           return { ...n, status };
         });
+        
+        // Debug logging for organicMatter section status
+        if (section === 'organicMatter') {
+          console.log('DEBUG - Organic Matter section status calculation:');
+          nutrientsWithStatus.forEach(n => {
+            console.log(`  ${n.name}: current=${n.current}, status=${n.status}`);
+          });
+        }
+        
         const deficient = nutrientsWithStatus.filter(n => n.status === 'low').map(n => n.name);
         const optimal = nutrientsWithStatus.filter(n => n.status === 'optimal').map(n => n.name);
         const excess = nutrientsWithStatus.filter(n => n.status === 'high').map(n => n.name);
