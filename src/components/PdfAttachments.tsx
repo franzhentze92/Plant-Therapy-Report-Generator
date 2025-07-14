@@ -15,7 +15,7 @@ interface PdfAttachmentsProps {
 
 const PdfAttachments: React.FC<PdfAttachmentsProps> = ({ frontAttachments, setFrontAttachments, backAttachments, setBackAttachments, onSummaryChange }) => {
   const frontOptions = [
-    { id: 'plant-therapy-cover', label: 'Plant Therapy Report Cover' }
+    { id: 'plant-therapy-cover', label: 'Therapy Report Cover' }
   ];
 
   const backOptions = [

@@ -2725,7 +2725,7 @@ const SoilReportGenerator: React.FC = () => {
           </Card>
           <Card className="bg-white flex-1">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-black">Soil Upload</CardTitle>
+              <CardTitle className="text-black">Soil Analysis Upload</CardTitle>
               <button type="button" className="ml-2 text-gray-400 hover:text-blue-600 focus:outline-none align-middle">
                 <Info size={18} />
               </button>

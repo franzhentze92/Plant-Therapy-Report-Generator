@@ -55,7 +55,7 @@ const SoilUpload: React.FC<SoilUploadProps> = ({ onFileUpload, resetKey }) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-black text-2xl">
           <Upload className="h-6 w-6" />
-          Plant Upload
+          CSV Upload
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -82,7 +82,7 @@ const SoilUpload: React.FC<SoilUploadProps> = ({ onFileUpload, resetKey }) => {
             <>
               <Upload className="h-16 w-16 mx-auto text-gray-400 mb-6" />
               <p className="text-center text-gray-600 text-lg">
-                Drop your plant analysis chart here
+                Drop your analysis report here
               </p>
               <p className="text-lg text-gray-500 mb-6">
                 or click to browse files
