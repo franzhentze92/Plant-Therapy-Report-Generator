@@ -263,10 +263,11 @@ def extract_soil_report():
                                 r'\s*(ppm|%|mg/kg|mS/cm)', '', val)
                             if '<' in val_clean:
                                 return 0
-                            try:
-                                return float(val_clean)
-                            except Exception:
-                                return 0
+                            # Extract the first number from the string
+                            match = re.search(r'[-+]?\d*\.\d+|\d+', val_clean)
+                            if match:
+                                return float(match.group())
+                            return 0
                         current = parse_value(
                             row[header_map['current']]) if 'current' in header_map else None
                         # For compatibility, keep 'ideal' as the midpoint if
@@ -336,10 +337,11 @@ def extract_soil_report():
                                 r'\s*(ppm|%|mg/kg|mS/cm)', '', val)
                             if '<' in val_clean:
                                 return 0
-                            try:
-                                return float(val_clean)
-                            except Exception:
-                                return 0
+                            # Extract the first number from the string
+                            match = re.search(r'[-+]?\d*\.\d+|\d+', val_clean)
+                            if match:
+                                return float(match.group())
+                            return 0
                         current = parse_value(current_raw)
                         ideal = parse_range(ideal_raw)
                         # Only add if we have a valid name and some data

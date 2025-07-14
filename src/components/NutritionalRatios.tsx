@@ -54,12 +54,17 @@ const NutritionalRatios = ({ nutrients }) => {
     if (ratio.label === 'Ca/Mg') {
       // Always use the input value for Ca/Mg Ratio (match both 'Ca/Mg Ratio' and 'Ca_Mg_Ratio', case-insensitive)
       const caMg = nutrients.find(n => /ca[\/_\- ]?mg[\/_\- ]?ratio/i.test(n.name));
-      if (caMg && caMg.current !== undefined && caMg.ideal !== undefined && caMg.current !== null && caMg.ideal !== null) {
+      if (caMg && caMg.current !== undefined && caMg.current !== null) {
         value = caMg.current;
-        ideal = caMg.ideal;
+        ideal = caMg.ideal !== undefined && caMg.ideal !== null ? caMg.ideal : 3.35;
       } else {
-        value = null;
-        ideal = null;
+        // Calculate from real values if not present
+        const ca = getNutrientValue(nutrients, 'calcium');
+        const mg = getNutrientValue(nutrients, 'magnesium');
+        if (ca !== null && mg !== null && mg !== 0) {
+          value = ca / mg;
+          ideal = 3.35;
+        }
       }
     } else {
       const num = getNutrientValue(nutrients, ratio.num);
