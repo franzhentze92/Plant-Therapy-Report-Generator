@@ -496,6 +496,25 @@ const SoilReportGenerator: React.FC = () => {
   const [showThresholdsPopup, setShowThresholdsPopup] = useState(false);
   const [showSensitivityPopup, setShowSensitivityPopup] = useState(false);
 
+  // Declare canonicalNutrients only once here
+  const canonicalNutrients = [
+    // albrecht_mehlich_kcl
+    'CEC', 'TEC', 'Paramagnetism', 'pH_level_1_5_water', 'Organic_Matter_Calc', 'Organic_Carbon_LECO', 'Conductivity_1_5_water', 'Ca_Mg_Ratio',
+    'Nitrate_N_KCl', 'Ammonium_N_KCl', 'Phosphorus_Mehlich_III', 'Calcium_Mehlich_III', 'Magnesium_Mehlich_III', 'Potassium_Mehlich_III',
+    'Sodium_Mehlich_III', 'Sulfur_KCl', 'Aluminium', 'Silicon_CaCl2', 'Boron_Hot_CaCl2', 'Iron_DTPA', 'Manganese_DTPA', 'Copper_DTPA', 'Zinc_DTPA',
+    // base_saturation
+    'Calcium', 'Magnesium', 'Potassium', 'Sodium', 'Aluminum', 'Hydrogen', 'Other_Bases',
+    // lamotte_reams
+    'Calcium_LaMotte', 'Magnesium_LaMotte', 'Phosphorus_LaMotte', 'Potassium_LaMotte',
+    // tae
+    'Sodium_TAE', 'Potassium_TAE', 'Calcium_TAE', 'Magnesium_TAE', 'Phosphorus_TAE', 'Aluminium_TAE', 'Copper_TAE', 'Iron_TAE', 'Manganese_TAE',
+    'Selenium_TAE', 'Zinc_TAE', 'Boron_TAE', 'Silicon_TAE', 'Cobalt_TAE', 'Molybdenum_TAE', 'Sulfur_TAE'
+  ];
+  const sourceNutrients = (nutrients && nutrients.length > 0) ? nutrients : (uploadedFile ? [] : mockNutrients);
+  const unifiedNutrientRows = getUnifiedNutrientsFromParsed(sourceNutrients, canonicalNutrients, fixedNutrientData);
+
+  // ... then declare sourceNutrients and unifiedNutrientRows ...
+
   // Per-nutrient sensitivity: { [nutrientName]: { min, max } } (for bar scaling, not color)
   // Remove old nutrientSensitivity state
   // Remove this:
@@ -546,43 +565,24 @@ const SoilReportGenerator: React.FC = () => {
     // ... rest of fertilizer definitions ...
   } catch (e) {}
 
-  // Build unified mainNutrients array for all sections (now inside the component)
-  console.log('nutrients state:', nutrients);
-  console.log('mockNutrients:', mockNutrients);
-  const sourceNutrients = nutrients.length > 0 ? nutrients : mockNutrients;
-  console.log('sourceNutrients used for mainNutrients:', sourceNutrients);
-  const seen = new Set();
-  const mainNutrients = sourceNutrients.filter(n => {
-    if (/base saturation/i.test(n.name) || /lamotte/i.test(n.name)) return false;
+  // Deduplicate mainNutrients by canonical name
+  const canonicalName = (name) => {
+    // Remove parenthesis and trim
+    return name.split('(')[0].trim().toLowerCase();
+  };
+  const dedupedMainNutrientsMap = new Map();
+  sourceNutrients.forEach(n => {
+    const key = canonicalName(n.name);
+    // Prefer the first occurrence of the more specific name (e.g., 'Calcium (Mehlich III)')
+    if (!dedupedMainNutrientsMap.has(key) || /mehlich|dtpa|kcl|hot|lamotte|ca|mg|iii|ii|i|tae|saturation|base|sulfur|sulphur|phosphorus|potassium|magnesium|calcium|sodium|aluminium|aluminum|hydrogen|other/i.test(n.name)) {
+      dedupedMainNutrientsMap.set(key, n);
+    }
+  });
+  const dedupedMainNutrients = Array.from(dedupedMainNutrientsMap.values()).filter(n => {
     const match = allowedNutrients.some(an => n.name.toLowerCase().includes(an.toLowerCase()));
-    if (!match) return false;
-    const mainName = n.name.split('(')[0].trim();
-    if (seen.has(mainName.toLowerCase())) return false;
-    // --- Prefer specific method for Calcium and Manganese ---
-    if (mainName.toLowerCase() === 'calcium') {
-      // Find all calcium candidates
-      const allCalcium = sourceNutrients.filter(x => x.name.split('(')[0].trim().toLowerCase() === 'calcium');
-      // Prefer Mehlich
-      const mehlich = allCalcium.find(x => /mehlich/i.test(x.name));
-      if (mehlich) {
-        seen.add(mainName.toLowerCase());
-        return n === mehlich;
-      }
-    }
-    if (mainName.toLowerCase() === 'manganese') {
-      const allManganese = sourceNutrients.filter(x => x.name.split('(')[0].trim().toLowerCase() === 'manganese');
-      // Prefer DTPA
-      const dtpa = allManganese.find(x => /dtpa/i.test(x.name));
-      if (dtpa) {
-        seen.add(mainName.toLowerCase());
-        return n === dtpa;
-      }
-    }
-    seen.add(mainName.toLowerCase());
-    return true;
+    return match;
   }).map(n => {
-    const name = n.name.split('(')[0].trim();
-    // --- SAFETY NET: convert any '<' value to 0 ---
+    const mainName = n.name.split('(')[0].trim();
     function safeNum(val) {
       if (typeof val === 'string' && val.includes('<')) return 0;
       if (typeof val === 'string') return parseFloat(val) || 0;
@@ -591,16 +591,28 @@ const SoilReportGenerator: React.FC = () => {
     }
     const current = safeNum(n.current);
     const ideal = safeNum(n.ideal);
-    // Deviation logic: deviation = ((current - ideal) / ideal) * 100
     let deviation = 0;
     if (ideal > 0) {
       deviation = ((current - ideal) / ideal) * 100;
     }
-    let status: 'low' | 'optimal' | 'high' = 'optimal';
+    let status = 'optimal';
     if (deviation < -25) status = 'low';
     else if (deviation > 25) status = 'high';
-    return { ...n, name, current, ideal, status };
+    return { ...n, name: mainName, current, ideal, status };
   });
+
+  // Deduplicate unifiedNutrientRows by canonical name
+  const dedupedUnifiedNutrientRowsMap = new Map();
+  unifiedNutrientRows.forEach(n => {
+    const key = canonicalName(n.name);
+    if (!dedupedUnifiedNutrientRowsMap.has(key)) {
+      dedupedUnifiedNutrientRowsMap.set(key, n);
+    }
+  });
+  const dedupedUnifiedNutrientRows = Array.from(dedupedUnifiedNutrientRowsMap.values());
+
+  // Use dedupedMainNutrients and dedupedUnifiedNutrientRows in tables
+  // In TotalNutrientApplicationTable and ComprehensiveNutrientTable, use .map((n, idx) => <tr key={n.name + '_' + idx} ...>)
 
   // Add SoilReportExportSummary component
   const SoilReportExportSummary = React.forwardRef<HTMLDivElement, {
@@ -635,7 +647,7 @@ const SoilReportGenerator: React.FC = () => {
         <div className="mb-4 text-2xl font-bold text-black">Paddock: {props.paddocks && props.paddocks[0]}</div>
         {/* Nutrient Summary and General Comments grouped on first page */}
         <div className="mb-8">
-          <NutrientSummary nutrients={mainNutrients} />
+          <NutrientSummary nutrients={dedupedMainNutrients} />
         </div>
         <div className="mb-8">
           <h2 className="text-xl font-bold mb-2" style={{ color: '#8cb33a' }}>General Comments</h2>
@@ -1083,7 +1095,7 @@ const SoilReportGenerator: React.FC = () => {
                 nutritionalScore = smoothScore(devFrac);
               }
               return (
-                <tr key={nutrient} className={rowBg}>
+                <tr key={nutrient + '_' + (n.category || idx)} className={rowBg}>
                   <td className="p-2 border-b align-middle font-medium">{nutrient}</td>
                   <td className="p-2 border-b align-middle text-right">{typeof originalPpm === 'number' && !isNaN(originalPpm) ? originalPpm.toFixed(1) : '-'}</td>
                   <td className="p-2 border-b align-middle text-right">{typeof targetPpm === 'number' && !isNaN(targetPpm) ? targetPpm.toFixed(1) : '-'}</td>
@@ -1220,7 +1232,7 @@ const SoilReportGenerator: React.FC = () => {
     pdf.save('soil-report.pdf');
   };
 
-  const deficientNutrients = mainNutrients.filter(n => n.status === 'low').map(n => n.name);
+  const deficientNutrients = dedupedMainNutrients.filter(n => n.status === 'low').map(n => n.name);
 
   // Add this new component below NutritionalRatios
   const NutrientBarChart = ({ nutrients, onEditColorLogic, showXAxisRegions, getThresholds, sensitivity }) => {
@@ -1597,12 +1609,12 @@ const SoilReportGenerator: React.FC = () => {
   }
   const mainRadarNutrients = Array.from(
     new Map(
-      mainNutrients
+      dedupedMainNutrients
         .filter(n => mainNutrientSubstrings.some(sub => n.name.toLowerCase().includes(sub)))
         .map(n => [normalizeNutrientName(n.name), n])
     ).values()
   );
-  const secondaryRadarNutrients = mainNutrients.filter(n =>
+  const secondaryRadarNutrients = dedupedMainNutrients.filter(n =>
     !mainNutrientSubstrings.some(sub => n.name.toLowerCase().includes(sub))
   );
 
@@ -2364,7 +2376,7 @@ const SoilReportGenerator: React.FC = () => {
               {nutrients.map((n, idx) => {
                 const { bar, color, status, low, high, value, unit, score } = getBarData(n);
                 return (
-                  <tr key={n.name}>
+                  <tr key={n.name + '_' + (n.category || idx)}>
                     <td className="p-2 border-b align-middle font-medium" style={{width: '15%'}}>{n.name}</td>
                     <td className="p-2 border-b align-middle text-right" style={{width: '15%'}}>{typeof value === 'number' && !isNaN(value) ? value.toFixed(2) : '-'} {unit}</td>
                     <td className="p-2 border-b align-middle text-right" style={{width: '20%'}}>{low.toFixed(2)} – {high.toFixed(2)} {unit}</td>
@@ -2402,73 +2414,7 @@ const SoilReportGenerator: React.FC = () => {
 
   const [newNutrientLevels, setNewNutrientLevels] = useState({});
 
-  // Build a flat canonical nutrient list from fixedNutrientData
-  const canonicalNutrients = [
-    // albrecht_mehlich_kcl
-    'CEC', 'TEC', 'Paramagnetism', 'pH_level_1_5_water', 'Organic_Matter_Calc', 'Organic_Carbon_LECO', 'Conductivity_1_5_water', 'Ca_Mg_Ratio',
-    'Nitrate_N_KCl', 'Ammonium_N_KCl', 'Phosphorus_Mehlich_III', 'Calcium_Mehlich_III', 'Magnesium_Mehlich_III', 'Potassium_Mehlich_III',
-    'Sodium_Mehlich_III', 'Sulfur_KCl', 'Aluminium', 'Silicon_CaCl2', 'Boron_Hot_CaCl2', 'Iron_DTPA', 'Manganese_DTPA', 'Copper_DTPA', 'Zinc_DTPA',
-    // base_saturation
-    'Calcium', 'Magnesium', 'Potassium', 'Sodium', 'Aluminum', 'Hydrogen', 'Other_Bases',
-    // lamotte_reams
-    'Calcium_LaMotte', 'Magnesium_LaMotte', 'Phosphorus_LaMotte', 'Potassium_LaMotte',
-    // tae
-    'Sodium_TAE', 'Potassium_TAE', 'Calcium_TAE', 'Magnesium_TAE', 'Phosphorus_TAE', 'Aluminium_TAE', 'Copper_TAE', 'Iron_TAE', 'Manganese_TAE',
-    'Selenium_TAE', 'Zinc_TAE', 'Boron_TAE', 'Silicon_TAE', 'Cobalt_TAE', 'Molybdenum_TAE', 'Sulfur_TAE'
-  ];
-  // Map raw parsed names to canonical names
-  const nutrientNameMap = {
-    'pH-level (1:5 water)': 'pH_level_1_5_water',
-    'Organic Matter (Calc)': 'Organic_Matter_Calc',
-    'Organic Carbon (LECO)': 'Organic_Carbon_LECO',
-    'Conductivity (1:5 water)': 'Conductivity_1_5_water',
-    'Ca/Mg Ratio': 'Ca_Mg_Ratio',
-    'Nitrate-N (KCl)': 'Nitrate_N_KCl',
-    'Ammonium-N (KCl)': 'Ammonium_N_KCl',
-    'Phosphorus (Mehlich III)': 'Phosphorus_Mehlich_III',
-    'Calcium (Mehlich III)': 'Calcium_Mehlich_III',
-    'Magnesium (Mehlich III)': 'Magnesium_Mehlich_III',
-    'Potassium (Mehlich III)': 'Potassium_Mehlich_III',
-    'Sodium (Mehlich III)': 'Sodium_Mehlich_III',
-    'Sulfur (KCl)': 'Sulfur_KCl',
-    'Aluminium': 'Aluminium',
-    'Silicon (CaCl2)': 'Silicon_CaCl2',
-    'Boron (Hot CaCl2)': 'Boron_Hot_CaCl2',
-    'Iron (DTPA)': 'Iron_DTPA',
-    'Manganese (DTPA)': 'Manganese_DTPA',
-    'Copper (DTPA)': 'Copper_DTPA',
-    'Zinc (DTPA)': 'Zinc_DTPA',
-    // base_saturation
-    'Calcium': 'Calcium',
-    'Magnesium': 'Magnesium',
-    'Potassium': 'Potassium',
-    'Sodium': 'Sodium',
-    'Aluminum': 'Aluminum',
-    'Hydrogen': 'Hydrogen',
-    'Other Bases': 'Other_Bases',
-    // lamotte_reams
-    'Calcium LaMotte': 'Calcium_LaMotte',
-    'Magnesium LaMotte': 'Magnesium_LaMotte',
-    'Phosphorus LaMotte': 'Phosphorus_LaMotte',
-    'Potassium LaMotte': 'Potassium_LaMotte',
-    // tae (add more as needed)
-    'Sodium TAE': 'Sodium_TAE',
-    'Potassium TAE': 'Potassium_TAE',
-    'Calcium TAE': 'Calcium_TAE',
-    'Magnesium TAE': 'Magnesium_TAE',
-    'Phosphorus TAE': 'Phosphorus_TAE',
-    'Aluminium TAE': 'Aluminium_TAE',
-    'Copper TAE': 'Copper_TAE',
-    'Iron TAE': 'Iron_TAE',
-    'Manganese TAE': 'Manganese_TAE',
-    'Selenium TAE': 'Selenium_TAE',
-    'Zinc TAE': 'Zinc_TAE',
-    'Boron TAE': 'Boron_TAE',
-    'Silicon TAE': 'Silicon_TAE',
-    'Cobalt TAE': 'Cobalt_TAE',
-    'Molybdenum TAE': 'Molybdenum_TAE',
-    'Sulfur TAE': 'Sulfur_TAE',
-  };
+
   // Build a lookup from parsed nutrients to canonical names
   function mapParsedToCanonical(parsedNutrients) {
     const lookup = {};
@@ -2557,26 +2503,67 @@ const SoilReportGenerator: React.FC = () => {
     });
     // Build unified array
     return canonicalList.map(key => {
-      // Find meta from canonicalData
-      let section = (Object.values(canonicalData) as Array<Record<string, any>>).find(sec => key in sec);
-      let meta = section ? section[key] : {};
       let parsed = parsedLookup[key];
-      let value = parsed ? parsed.current : '';
-      let unit = parsed ? parsed.unit : (meta.unit || '');
-      let ideal = meta.target;
-      let ideal_range = meta.ideal_range;
+      // Always use real parsed value and ideal if present
+      let value = parsed && typeof parsed.current !== 'undefined' ? parsed.current : '';
+      let ideal = parsed && typeof parsed.ideal !== 'undefined' ? parsed.ideal : undefined;
+      let unit = parsed && parsed.unit ? parsed.unit : (canonicalData && canonicalData[key] && canonicalData[key].unit ? canonicalData[key].unit : '');
+      let ideal_range = canonicalData && canonicalData[key] && canonicalData[key].ideal_range ? canonicalData[key].ideal_range : undefined;
       return {
         name: key,
-        value,
-        unit,
+        current: value,
         ideal,
+        unit,
         ideal_range
       };
     });
   }
 
   // Calculate unifiedNutrientRows before return
-  const unifiedNutrientRows = getUnifiedNutrientsFromParsed(nutrients, canonicalNutrients, fixedNutrientData);
+
+  // Add this state at the top of the component (after useState hooks):
+  const [generalComments, setGeneralComments] = useState({
+    organicMatter: '',
+    cec: '',
+    soilPh: '',
+    baseSaturation: '',
+    availableNutrients: '',
+    lamotteReams: '',
+    tae: '',
+  });
+  const [loadingGeneralComments, setLoadingGeneralComments] = useState(false);
+  const [errorGeneralComments, setErrorGeneralComments] = useState<string | null>(null);
+
+  async function handleGenerateAI() {
+    setLoadingGeneralComments(true);
+    setErrorGeneralComments(null);
+    try {
+      // TODO: Ensure your backend exposes this endpoint and returns the expected fields
+      const response = await fetch('/api/generate-soil-comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nutrients: sourceNutrients,
+          paddock: selectedPaddocks[0] || '',
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to generate comments');
+      const data = await response.json();
+      setGeneralComments({
+        organicMatter: data.organicMatter || '',
+        cec: data.cec || '',
+        soilPh: data.soilPh || '',
+        baseSaturation: data.baseSaturation || '',
+        availableNutrients: data.availableNutrients || '',
+        lamotteReams: data.lamotteReams || '',
+        tae: data.tae || '',
+      });
+    } catch (err) {
+      setErrorGeneralComments('Failed to generate comments.');
+    } finally {
+      setLoadingGeneralComments(false);
+    }
+  }
 
   return (
     <div className="w-full max-w-screen-2xl mx-auto">
@@ -2778,32 +2765,35 @@ const SoilReportGenerator: React.FC = () => {
                         </div>
                       </div>
                     </div> */}
-                    {/* d. Nutritional Status Table */}
-                    <div className="mb-4">
-                      <h3 className="font-semibold text-lg text-black mb-2">c. Nutritional Status Table</h3>
-                      <Card className="bg-white">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                          <CardTitle className="text-black">Nutritional Status Table</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <TotalNutrientApplicationTable
-                            mainNutrients={unifiedNutrients}
-                            nutrients={unifiedNutrients}
-                            soilAmendmentsSummary={soilAmendmentsSummary}
-                            seedTreatmentProducts={seedTreatmentProducts}
-                            soilDrenchProducts={soilDrenchProducts}
-                            foliarSprayProducts={allFoliarSprayProducts}
-                            soilAmendmentFerts={soilAmendmentFerts}
-                            seedTreatmentDefs={seedTreatmentDefs}
-                            soilDrenchDefs={soilDrenchDefs}
-                            foliarSprayDefs={foliarSprayDefs}
-                            heading="Nutritional Situation"
-                            showSourceBreakdown={false}
-                            newNutrientLevels={newNutrientLevels}
-                          />
-                        </CardContent>
-                      </Card>
-                    </div>
+                    {/* d. 
+                     */}
+{false && (
+  <div className="mb-4">
+    <h3 className="font-semibold text-lg text-black mb-2">c. Nutritional Status Table</h3>
+    <Card className="bg-white">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-black">Nutritional Status Table</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <TotalNutrientApplicationTable
+          mainNutrients={dedupedMainNutrients}
+          nutrients={dedupedMainNutrients}
+          soilAmendmentsSummary={soilAmendmentsSummary}
+          seedTreatmentProducts={seedTreatmentProducts}
+          soilDrenchProducts={soilDrenchProducts}
+          foliarSprayProducts={allFoliarSprayProducts}
+          soilAmendmentFerts={soilAmendmentFerts}
+          seedTreatmentDefs={seedTreatmentDefs}
+          soilDrenchDefs={soilDrenchDefs}
+          foliarSprayDefs={foliarSprayDefs}
+          heading="Nutritional Situation"
+          showSourceBreakdown={false}
+          newNutrientLevels={newNutrientLevels}
+        />
+      </CardContent>
+    </Card>
+  </div>
+)}
                   </>
                 )}
               </ReportSection>
@@ -2811,21 +2801,69 @@ const SoilReportGenerator: React.FC = () => {
               {/* 2. General Comments */}
               <ReportSection title="2. General Comments" collapsible expanded={showSection2} onToggle={() => setShowSection2(v => !v)} useHideButton={true} infoContent={"This section contains general comments and interpretations about your soil analysis, including organic matter, CEC, base saturation, pH, available nutrients, and reserves."}>
                 {showSection2 && (
-                  <div>
-                    {/* Removed redundant General Comments heading here */}
-                    <GeneralCommentsSoil
-                      nutrients={mainNutrients}
-                      somCecText={somCecText}
-                      setSomCecText={setSomCecText}
-                      baseSaturationText={baseSaturationText}
-                      setBaseSaturationText={setBaseSaturationText}
-                      phText={phText}
-                      setPhText={setPhText}
-                      availableNutrientsText={availableNutrientsText}
-                      setAvailableNutrientsText={setAvailableNutrientsText}
-                      soilReservesText={soilReservesText}
-                      setSoilReservesText={setSoilReservesText}
-                    />
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block font-medium mb-1">Organic Matter</label>
+                      <textarea
+                        className="w-full p-2 border rounded text-sm min-h-[60px]"
+                        value={generalComments.organicMatter}
+                        onChange={e => setGeneralComments(gc => ({ ...gc, organicMatter: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">CEC</label>
+                      <textarea
+                        className="w-full p-2 border rounded text-sm min-h-[60px]"
+                        value={generalComments.cec}
+                        onChange={e => setGeneralComments(gc => ({ ...gc, cec: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">Soil pH</label>
+                      <textarea
+                        className="w-full p-2 border rounded text-sm min-h-[60px]"
+                        value={generalComments.soilPh}
+                        onChange={e => setGeneralComments(gc => ({ ...gc, soilPh: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">Base Saturation</label>
+                      <textarea
+                        className="w-full p-2 border rounded text-sm min-h-[60px]"
+                        value={generalComments.baseSaturation}
+                        onChange={e => setGeneralComments(gc => ({ ...gc, baseSaturation: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">Available Nutrients</label>
+                      <textarea
+                        className="w-full p-2 border rounded text-sm min-h-[60px]"
+                        value={generalComments.availableNutrients}
+                        onChange={e => setGeneralComments(gc => ({ ...gc, availableNutrients: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">Lamotte Reams</label>
+                      <textarea
+                        className="w-full p-2 border rounded text-sm min-h-[60px]"
+                        value={generalComments.lamotteReams}
+                        onChange={e => setGeneralComments(gc => ({ ...gc, lamotteReams: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1">TAE</label>
+                      <textarea
+                        className="w-full p-2 border rounded text-sm min-h-[60px]"
+                        value={generalComments.tae}
+                        onChange={e => setGeneralComments(gc => ({ ...gc, tae: e.target.value }))}
+                      />
+                    </div>
+                    <div className="mt-4 flex gap-2 items-center">
+                      <Button onClick={handleGenerateAI} disabled={loadingGeneralComments} type="button">
+                        {loadingGeneralComments ? 'Generating...' : 'Generate with AI'}
+                      </Button>
+                      {errorGeneralComments && <span className="text-red-600 text-sm">{errorGeneralComments}</span>}
+                    </div>
                   </div>
                 )}
               </ReportSection>
@@ -2889,7 +2927,7 @@ const SoilReportGenerator: React.FC = () => {
                         <SoilDrench
                           selectedProducts={soilDrenchProducts}
                           setSelectedProducts={setSoilDrenchProducts}
-                          deficientNutrients={mainNutrients.filter(n => n.status === 'low').map(n => n.name)}
+                          deficientNutrients={dedupedMainNutrients.filter(n => n.status === 'low').map(n => n.name)}
                         />
                       </CardContent>
                     </Card>
@@ -2900,7 +2938,7 @@ const SoilReportGenerator: React.FC = () => {
                         <FoliarSpray
                           selectedProducts={preFloweringFoliarProducts}
                           setSelectedProducts={setPreFloweringFoliarProducts}
-                          deficientNutrients={mainNutrients.filter(n => n.status === 'low').map(n => n.name)}
+                          deficientNutrients={dedupedMainNutrients.filter(n => n.status === 'low').map(n => n.name)}
                         />
                         {!showSecondPreFloweringFoliar ? (
                           <Button variant="outline" className="mt-2" onClick={() => setShowSecondPreFloweringFoliar(true)}>
@@ -2915,7 +2953,7 @@ const SoilReportGenerator: React.FC = () => {
                           <FoliarSpray
                             selectedProducts={preFloweringFoliarProducts2}
                             setSelectedProducts={setPreFloweringFoliarProducts2}
-                            deficientNutrients={mainNutrients.filter(n => n.status === 'low').map(n => n.name)}
+                            deficientNutrients={dedupedMainNutrients.filter(n => n.status === 'low').map(n => n.name)}
                           />
                         )}
                       </CardContent>
@@ -2927,7 +2965,7 @@ const SoilReportGenerator: React.FC = () => {
                         <FoliarSpray
                           selectedProducts={nutritionalFoliarProducts}
                           setSelectedProducts={setNutritionalFoliarProducts}
-                          deficientNutrients={mainNutrients.filter(n => n.status === 'low').map(n => n.name)}
+                          deficientNutrients={dedupedMainNutrients.filter(n => n.status === 'low').map(n => n.name)}
                         />
                         {!showSecondFoliar ? (
                           <Button variant="outline" className="mt-2" onClick={() => setShowSecondFoliar(true)}>
@@ -2942,7 +2980,7 @@ const SoilReportGenerator: React.FC = () => {
                           <FoliarSpray
                             selectedProducts={nutritionalFoliarProducts2}
                             setSelectedProducts={setNutritionalFoliarProducts2}
-                            deficientNutrients={mainNutrients.filter(n => n.status === 'low').map(n => n.name)}
+                            deficientNutrients={dedupedMainNutrients.filter(n => n.status === 'low').map(n => n.name)}
                           />
                         )}
                       </CardContent>
@@ -3155,8 +3193,8 @@ const SoilReportGenerator: React.FC = () => {
               <ReportSection title="5. Total Nutrient Recommendation Summary" collapsible expanded={showSection5} onToggle={() => setShowSection5(v => !v)} useHideButton={true} infoContent={"Shows the total nutrients applied from all sources and compares them to your soil's requirements. Helps ensure balanced nutrition and avoid excesses."}>
                 {showSection5 && (
                   <TotalNutrientApplicationTable
-                    mainNutrients={unifiedNutrients}
-                    nutrients={unifiedNutrients}
+                    mainNutrients={dedupedMainNutrients}
+                    nutrients={dedupedMainNutrients}
                     soilAmendmentsSummary={soilAmendmentsSummary}
                     seedTreatmentProducts={seedTreatmentProducts}
                     soilDrenchProducts={soilDrenchProducts}
@@ -3271,11 +3309,11 @@ const SoilReportGenerator: React.FC = () => {
             nutrients={unifiedNutrients}
             paddocks={selectedPaddocks}
             generalComments={[
-              somCecText,
-              baseSaturationText,
-              phText,
-              availableNutrientsText,
-              soilReservesText
+              generalComments.organicMatter,
+              generalComments.cec,
+              generalComments.soilPh,
+              generalComments.availableNutrients,
+              generalComments.tae
             ].join('\n\n')}
             soilAmendments={soilAmendmentsSummary}
             seedTreatment={seedTreatmentProducts}
