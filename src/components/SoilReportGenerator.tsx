@@ -2836,7 +2836,7 @@ const SoilReportGenerator: React.FC<SoilReportGeneratorProps> = ({ paddockReport
           </Card>
           <Card className="bg-white flex-1">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-black">Plant Upload</CardTitle>
+              <CardTitle className="text-black">Leaf Analysis Upload</CardTitle>
               {/* Info icon removed as per user request */}
             </CardHeader>
             <CardContent>

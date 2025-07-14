@@ -5,7 +5,7 @@ import { FileDown, Share2, Save, Leaf, Bean, Droplets, Sprout, Info, Beaker } fr
 import { Settings } from 'lucide-react';
 import SoilUpload from './SoilUpload';
 import NutrientSummary from './NutrientSummary';
-import GeneralComments from './GeneralComments';
+import GeneralCommentsSoil from './GeneralCommentsSoil';
 import SeedTreatment, { PlantingBlend } from './SeedTreatment';
 import SoilDrench from './SoilDrench';
 import FoliarSpray from './FoliarSpray';
@@ -243,8 +243,8 @@ function getUnifiedNutrients(data) {
   ['albrecht_mehlich_kcl', 'base_saturation', 'lamotte_reams', 'tae'].forEach(section => {
     if (data[section]) {
       for (const [key, val] of Object.entries(data[section])) {
-        if (typeof val === 'object' && val !== null && typeof (val as Record<string, any>).value !== 'undefined') {
-          const v = val as Record<string, any>;
+        if (typeof val === 'object' && val !== null && typeof (val as any).value !== 'undefined') {
+          const v = val as any;
           result.push({
             name: key,
             current: safeNum(v.value),
@@ -1130,52 +1130,36 @@ const SoilReportGenerator: React.FC = () => {
     console.log('File upload started:', file);
     setUploadedFile(file);
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let allText = '';
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        const pageText = content.items.map((item: any) => item.str).join(' ');
-        allText += pageText + '\n';
+      // Send file to backend for parsing
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('http://localhost:5000/extract-soil-report', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      // Parse the main nutrient table from allText
-      // Example: extract lines between 'ALBRECHT CATEGORY' and 'Base Saturation'
-      const lines = allText.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
-      const startIdx = lines.findIndex(l => /ALBRECHT CATEGORY/i.test(l));
-      const endIdx = lines.findIndex(l => /Base Saturation/i.test(l));
-      let tableLines = lines;
-      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-        tableLines = lines.slice(startIdx + 1, endIdx);
+      
+      const result = await response.json();
+      console.log('Backend response:', result);
+      
+      if (result.error) {
+        throw new Error(result.error);
       }
-      // Parse nutrients from tableLines
-      const nutrientRows = tableLines.filter(l => /ppm|%|mg\/kg|mS\/cm/i.test(l));
-      const parsedNutrients = nutrientRows.map(row => {
-        // Try to extract: name, value, range
-        const match = row.match(/^(.*?)\s+([<\d\.]+)\s*(ppm|%|mg\/kg|mS\/cm)?\s*(\d+\s*[-–]\s*\d+)?/i);
-        if (match) {
-          const name = match[1].replace(/\s+$/, '');
-          let current = match[2];
-          if (current.includes('<')) current = '0';
-          const currentNum = parseFloat(current);
-          const unit = match[3] || '';
-          let ideal: number | null = null;
-          if (match[4]) {
-            const range = match[4].replace(/\s/g, '').split(/[-–]/);
-            if (range.length === 2) {
-              const low = parseFloat(range[0]);
-              const high = parseFloat(range[1]);
-              if (!isNaN(low) && !isNaN(high)) {
-                ideal = (low + high) / 2;
-              }
-            }
-          }
-          return { name, current: isNaN(currentNum) ? 0 : currentNum, ideal, unit };
-        }
-        return null;
-      }).filter(Boolean);
-      setNutrients(parsedNutrients);
-      console.log('File upload complete, parsedNutrients:', parsedNutrients);
+      
+      // Always use single analysis logic for now
+      if (result.analyses && Array.isArray(result.analyses) && result.analyses[0]?.nutrients) {
+        setNutrients(result.analyses[0].nutrients);
+      } else if (Array.isArray(result.nutrients)) {
+        setNutrients(result.nutrients);
+      } else {
+        setNutrients([]);
+      }
+      // Optionally, set zone sensitivity if needed (skip for now)
+      console.log('File upload complete, parsedNutrients:', result);
     } catch (err) {
       console.error('Error parsing PDF:', err);
       alert('Failed to parse PDF. Please check your file or try a different one.');
@@ -2385,14 +2369,18 @@ const SoilReportGenerator: React.FC = () => {
                     <td className="p-2 border-b align-middle text-right" style={{width: '15%'}}>{typeof value === 'number' && !isNaN(value) ? value.toFixed(2) : '-'} {unit}</td>
                     <td className="p-2 border-b align-middle text-right" style={{width: '20%'}}>{low.toFixed(2)} – {high.toFixed(2)} {unit}</td>
                     <td className="p-2 border-b align-middle" style={{width: '50%'}}>
-                      <div style={{ width: '100%', background: '#f3f4f6', borderRadius: 4, height: 16, position: 'relative' }}>
-                        {/* Background zones */}
-                        <div style={{ position: 'absolute', left: 0, top: 0, width: '33.3%', height: '100%', background: '#fddede', borderRadius: 4 }} />
-                        <div style={{ position: 'absolute', left: '33.3%', top: 0, width: '33.3%', height: '100%', background: '#d9f7e3' }} />
-                        <div style={{ position: 'absolute', left: '66.6%', top: 0, width: '33.4%', height: '100%', background: '#dee9fd', borderRadius: 4 }} />
-                        {/* Bar */}
-                        <div style={{ position: 'absolute', left: 0, top: 0, width: `${Math.max(0, Math.min(bar, 1)) * 100}%`, height: '100%', background: color, borderRadius: 4, opacity: 0.85 }} />
-                      </div>
+                      {(typeof low === 'number' && typeof high === 'number' && (low !== 0 || high !== 0)) ? (
+                        <div style={{ width: '100%', background: '#f3f4f6', borderRadius: 4, height: 16, position: 'relative' }}>
+                          {/* Background zones */}
+                          <div style={{ position: 'absolute', left: 0, top: 0, width: '33.3%', height: '100%', background: '#fddede', borderRadius: 4 }} />
+                          <div style={{ position: 'absolute', left: '33.3%', top: 0, width: '33.3%', height: '100%', background: '#d9f7e3' }} />
+                          <div style={{ position: 'absolute', left: '66.6%', top: 0, width: '33.4%', height: '100%', background: '#dee9fd', borderRadius: 4 }} />
+                          {/* Bar */}
+                          <div style={{ position: 'absolute', left: 0, top: 0, width: `${Math.max(0, Math.min(bar, 1)) * 100}%`, height: '100%', background: color, borderRadius: 4, opacity: 0.85 }} />
+                        </div>
+                      ) : (
+                        '-' // or leave empty
+                      )}
                     </td>
                   </tr>
                 );
@@ -2413,6 +2401,182 @@ const SoilReportGenerator: React.FC = () => {
   }
 
   const [newNutrientLevels, setNewNutrientLevels] = useState({});
+
+  // Build a flat canonical nutrient list from fixedNutrientData
+  const canonicalNutrients = [
+    // albrecht_mehlich_kcl
+    'CEC', 'TEC', 'Paramagnetism', 'pH_level_1_5_water', 'Organic_Matter_Calc', 'Organic_Carbon_LECO', 'Conductivity_1_5_water', 'Ca_Mg_Ratio',
+    'Nitrate_N_KCl', 'Ammonium_N_KCl', 'Phosphorus_Mehlich_III', 'Calcium_Mehlich_III', 'Magnesium_Mehlich_III', 'Potassium_Mehlich_III',
+    'Sodium_Mehlich_III', 'Sulfur_KCl', 'Aluminium', 'Silicon_CaCl2', 'Boron_Hot_CaCl2', 'Iron_DTPA', 'Manganese_DTPA', 'Copper_DTPA', 'Zinc_DTPA',
+    // base_saturation
+    'Calcium', 'Magnesium', 'Potassium', 'Sodium', 'Aluminum', 'Hydrogen', 'Other_Bases',
+    // lamotte_reams
+    'Calcium_LaMotte', 'Magnesium_LaMotte', 'Phosphorus_LaMotte', 'Potassium_LaMotte',
+    // tae
+    'Sodium_TAE', 'Potassium_TAE', 'Calcium_TAE', 'Magnesium_TAE', 'Phosphorus_TAE', 'Aluminium_TAE', 'Copper_TAE', 'Iron_TAE', 'Manganese_TAE',
+    'Selenium_TAE', 'Zinc_TAE', 'Boron_TAE', 'Silicon_TAE', 'Cobalt_TAE', 'Molybdenum_TAE', 'Sulfur_TAE'
+  ];
+  // Map raw parsed names to canonical names
+  const nutrientNameMap = {
+    'pH-level (1:5 water)': 'pH_level_1_5_water',
+    'Organic Matter (Calc)': 'Organic_Matter_Calc',
+    'Organic Carbon (LECO)': 'Organic_Carbon_LECO',
+    'Conductivity (1:5 water)': 'Conductivity_1_5_water',
+    'Ca/Mg Ratio': 'Ca_Mg_Ratio',
+    'Nitrate-N (KCl)': 'Nitrate_N_KCl',
+    'Ammonium-N (KCl)': 'Ammonium_N_KCl',
+    'Phosphorus (Mehlich III)': 'Phosphorus_Mehlich_III',
+    'Calcium (Mehlich III)': 'Calcium_Mehlich_III',
+    'Magnesium (Mehlich III)': 'Magnesium_Mehlich_III',
+    'Potassium (Mehlich III)': 'Potassium_Mehlich_III',
+    'Sodium (Mehlich III)': 'Sodium_Mehlich_III',
+    'Sulfur (KCl)': 'Sulfur_KCl',
+    'Aluminium': 'Aluminium',
+    'Silicon (CaCl2)': 'Silicon_CaCl2',
+    'Boron (Hot CaCl2)': 'Boron_Hot_CaCl2',
+    'Iron (DTPA)': 'Iron_DTPA',
+    'Manganese (DTPA)': 'Manganese_DTPA',
+    'Copper (DTPA)': 'Copper_DTPA',
+    'Zinc (DTPA)': 'Zinc_DTPA',
+    // base_saturation
+    'Calcium': 'Calcium',
+    'Magnesium': 'Magnesium',
+    'Potassium': 'Potassium',
+    'Sodium': 'Sodium',
+    'Aluminum': 'Aluminum',
+    'Hydrogen': 'Hydrogen',
+    'Other Bases': 'Other_Bases',
+    // lamotte_reams
+    'Calcium LaMotte': 'Calcium_LaMotte',
+    'Magnesium LaMotte': 'Magnesium_LaMotte',
+    'Phosphorus LaMotte': 'Phosphorus_LaMotte',
+    'Potassium LaMotte': 'Potassium_LaMotte',
+    // tae (add more as needed)
+    'Sodium TAE': 'Sodium_TAE',
+    'Potassium TAE': 'Potassium_TAE',
+    'Calcium TAE': 'Calcium_TAE',
+    'Magnesium TAE': 'Magnesium_TAE',
+    'Phosphorus TAE': 'Phosphorus_TAE',
+    'Aluminium TAE': 'Aluminium_TAE',
+    'Copper TAE': 'Copper_TAE',
+    'Iron TAE': 'Iron_TAE',
+    'Manganese TAE': 'Manganese_TAE',
+    'Selenium TAE': 'Selenium_TAE',
+    'Zinc TAE': 'Zinc_TAE',
+    'Boron TAE': 'Boron_TAE',
+    'Silicon TAE': 'Silicon_TAE',
+    'Cobalt TAE': 'Cobalt_TAE',
+    'Molybdenum TAE': 'Molybdenum_TAE',
+    'Sulfur TAE': 'Sulfur_TAE',
+  };
+  // Build a lookup from parsed nutrients to canonical names
+  function mapParsedToCanonical(parsedNutrients) {
+    const lookup = {};
+    parsedNutrients.forEach(n => {
+      // Try exact match
+      let canonical = nutrientNameMap[n.name];
+      if (!canonical) {
+        // Try removing extra spaces, case-insensitive
+        const cleaned = n.name.replace(/\s+/g, ' ').trim().toLowerCase();
+        for (const [raw, canon] of Object.entries(nutrientNameMap)) {
+          if (raw.toLowerCase() === cleaned) {
+            canonical = canon;
+            break;
+          }
+        }
+      }
+      if (canonical) {
+        lookup[canonical] = n;
+      }
+    });
+    return lookup;
+  }
+
+  // Robust merging logic for canonical nutrients (like plant generator)
+  function getUnifiedNutrientsFromParsed(parsedNutrients, canonicalList, canonicalData) {
+    // Build a lookup of parsed nutrients by canonical name
+    const nameMap = {
+      'pH-level (1:5 water)': 'pH_level_1_5_water',
+      'Organic Matter (Calc)': 'Organic_Matter_Calc',
+      'Organic Carbon (LECO)': 'Organic_Carbon_LECO',
+      'Conductivity (1:5 water)': 'Conductivity_1_5_water',
+      'Ca/Mg Ratio': 'Ca_Mg_Ratio',
+      'Nitrate-N (KCl)': 'Nitrate_N_KCl',
+      'Ammonium-N (KCl)': 'Ammonium_N_KCl',
+      'Phosphorus (Mehlich III)': 'Phosphorus_Mehlich_III',
+      'Calcium (Mehlich III)': 'Calcium_Mehlich_III',
+      'Magnesium (Mehlich III)': 'Magnesium_Mehlich_III',
+      'Potassium (Mehlich III)': 'Potassium_Mehlich_III',
+      'Sodium (Mehlich III)': 'Sodium_Mehlich_III',
+      'Sulfur (KCl)': 'Sulfur_KCl',
+      'Aluminium': 'Aluminium',
+      'Silicon (CaCl2)': 'Silicon_CaCl2',
+      'Boron (Hot CaCl2)': 'Boron_Hot_CaCl2',
+      'Iron (DTPA)': 'Iron_DTPA',
+      'Manganese (DTPA)': 'Manganese_DTPA',
+      'Copper (DTPA)': 'Copper_DTPA',
+      'Zinc (DTPA)': 'Zinc_DTPA',
+      // base_saturation
+      'Calcium': 'Calcium',
+      'Magnesium': 'Magnesium',
+      'Potassium': 'Potassium',
+      'Sodium': 'Sodium',
+      'Aluminum': 'Aluminum',
+      'Hydrogen': 'Hydrogen',
+      'Other Bases': 'Other_Bases',
+      // lamotte_reams
+      'Calcium LaMotte': 'Calcium_LaMotte',
+      'Magnesium LaMotte': 'Magnesium_LaMotte',
+      'Phosphorus LaMotte': 'Phosphorus_LaMotte',
+      'Potassium LaMotte': 'Potassium_LaMotte',
+      // tae
+      'Sodium TAE': 'Sodium_TAE',
+      'Potassium TAE': 'Potassium_TAE',
+      'Calcium TAE': 'Calcium_TAE',
+      'Magnesium TAE': 'Magnesium_TAE',
+      'Phosphorus TAE': 'Phosphorus_TAE',
+      'Aluminium TAE': 'Aluminium_TAE',
+      'Copper TAE': 'Copper_TAE',
+      'Iron TAE': 'Iron_TAE',
+      'Manganese TAE': 'Manganese_TAE',
+      'Selenium TAE': 'Selenium_TAE',
+      'Zinc TAE': 'Zinc_TAE',
+      'Boron TAE': 'Boron_TAE',
+      'Silicon TAE': 'Silicon_TAE',
+      'Cobalt TAE': 'Cobalt_TAE',
+      'Molybdenum TAE': 'Molybdenum_TAE',
+      'Sulfur TAE': 'Sulfur_TAE',
+    };
+    // Build lookup from parsed
+    const parsedLookup = {};
+    parsedNutrients.forEach(n => {
+      let canonical = nameMap[n.name] || n.name;
+      if (canonicalList.includes(canonical)) {
+        parsedLookup[canonical] = n;
+      }
+    });
+    // Build unified array
+    return canonicalList.map(key => {
+      // Find meta from canonicalData
+      let section = (Object.values(canonicalData) as Array<Record<string, any>>).find(sec => key in sec);
+      let meta = section ? section[key] : {};
+      let parsed = parsedLookup[key];
+      let value = parsed ? parsed.current : '';
+      let unit = parsed ? parsed.unit : (meta.unit || '');
+      let ideal = meta.target;
+      let ideal_range = meta.ideal_range;
+      return {
+        name: key,
+        value,
+        unit,
+        ideal,
+        ideal_range
+      };
+    });
+  }
+
+  // Calculate unifiedNutrientRows before return
+  const unifiedNutrientRows = getUnifiedNutrientsFromParsed(nutrients, canonicalNutrients, fixedNutrientData);
 
   return (
     <div className="w-full max-w-screen-2xl mx-auto">
@@ -2528,7 +2692,7 @@ const SoilReportGenerator: React.FC = () => {
                     </div> */}
                     {/* --- Comprehensive Nutrient Table Section --- */}
                     <div className="mb-4">
-                      <ComprehensiveNutrientTable nutrients={unifiedNutrients} />
+                      <ComprehensiveNutrientTable nutrients={Array.isArray(nutrients) ? nutrients : getUnifiedNutrients(nutrients)} />
                       {showThresholdsPopup && (
                         <NutrientThresholdsPopup
                           nutrients={unifiedNutrients.map(n => n.name)}
@@ -2548,7 +2712,7 @@ const SoilReportGenerator: React.FC = () => {
                           <CardTitle className="text-black">Nutritional Ratios</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <NutritionalRatios nutrients={unifiedNutrients} />
+                          <NutritionalRatios nutrients={nutrients} />
                         </CardContent>
                       </Card>
                     </div>
@@ -2649,8 +2813,8 @@ const SoilReportGenerator: React.FC = () => {
                 {showSection2 && (
                   <div>
                     {/* Removed redundant General Comments heading here */}
-                    <GeneralComments
-                      nutrients={unifiedNutrients}
+                    <GeneralCommentsSoil
+                      nutrients={mainNutrients}
                       somCecText={somCecText}
                       setSomCecText={setSomCecText}
                       baseSaturationText={baseSaturationText}

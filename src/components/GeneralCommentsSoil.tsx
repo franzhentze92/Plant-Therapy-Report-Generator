@@ -98,7 +98,7 @@ function analyzeNutrientAntagonism(nutrientsWithStatus: Nutrient[]) {
   return { excessiveNutrients, antagonismDetails };
 }
 
-const GeneralComments: React.FC<GeneralCommentsProps> = ({ nutrients, somCecText, setSomCecText, baseSaturationText, setBaseSaturationText, phText, setPhText, availableNutrientsText, setAvailableNutrientsText, soilReservesText, setSoilReservesText }) => {
+const GeneralCommentsSoil: React.FC<GeneralCommentsProps> = ({ nutrients, somCecText, setSomCecText, baseSaturationText, setBaseSaturationText, phText, setPhText, availableNutrientsText, setAvailableNutrientsText, soilReservesText, setSoilReservesText }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -182,7 +182,7 @@ const GeneralComments: React.FC<GeneralCommentsProps> = ({ nutrients, somCecText
         <Card className="bg-white">
           <CardHeader>
             <CardTitle className="text-black flex items-center gap-4">
-              Enter the general comments here
+              Enter the general comments for the soil therapy report.
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -204,4 +204,4 @@ const GeneralComments: React.FC<GeneralCommentsProps> = ({ nutrients, somCecText
   );
 };
 
-export default GeneralComments;
+export default GeneralCommentsSoil; 
