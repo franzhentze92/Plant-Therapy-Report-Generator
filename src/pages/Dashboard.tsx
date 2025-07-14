@@ -14,7 +14,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-xl font-semibold mb-2">Plant Report Generator</h2>
             <p className="mb-4 text-muted-foreground">Generate detailed plant nutrition reports, export PDFs, and manage paddock data.</p>
             <Button asChild className="bg-[#8cb43a] hover:bg-[#7aa32e] text-white font-semibold">
-              <Link to="/">Go to Plant Report Generator</Link>
+              <Link to="/plant-report">Go to Plant Report Generator</Link>
             </Button>
           </Card>
           <Card className="flex flex-col items-start p-6 shadow-lg border border-[#e5e7eb]">

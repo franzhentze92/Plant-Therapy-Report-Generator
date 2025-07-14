@@ -22,9 +22,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/plant-report" element={<Index />} />
             <Route path="/print-report" element={<PrintClientReport />} />
-            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/soil-report" element={<SoilReportGeneratorPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
