@@ -182,7 +182,7 @@ const GeneralCommentsSoil: React.FC<GeneralCommentsProps> = ({ nutrients, somCec
         <Card className="bg-white">
           <CardHeader>
             <CardTitle className="text-black flex items-center gap-4">
-              Enter the general comments for the soil therapy report.
+              Enter the general comments for the soil therapy report
             </CardTitle>
           </CardHeader>
           <CardContent>

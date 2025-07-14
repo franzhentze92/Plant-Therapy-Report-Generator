@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     proxy: {
       "/generate-comments": "http://localhost:5000",
+      "/generate-soil-comments": "http://localhost:5000",
       "/extract-soil-report": "http://localhost:5000",
     },
   },

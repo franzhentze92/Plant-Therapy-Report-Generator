@@ -120,6 +120,79 @@ const allowedNutrients = [
   'Ca/Mg Ratio'
 ];
 
+const nutrientNameMap = {
+  'Nitrate-N (KCl)': 'Nitrate',
+  'Nitrate_N_KCl': 'Nitrate',
+  'Ammonium-N (KCl)': 'Ammonium',
+  'Ammonium_N_KCl': 'Ammonium',
+  'Phosphorus (Mehlich III)': 'Phosphorus',
+  'Phosphorus_Mehlich_III': 'Phosphorus',
+  'Calcium (Mehlich III)': 'Calcium',
+  'Calcium_Mehlich_III': 'Calcium',
+  'Magnesium (Mehlich III)': 'Magnesium',
+  'Magnesium_Mehlich_III': 'Magnesium',
+  'Potassium (Mehlich III)': 'Potassium',
+  'Potassium_Mehlich_III': 'Potassium',
+  'Sodium (Mehlich III)': 'Sodium',
+  'Sodium_Mehlich_III': 'Sodium',
+  'Sulfur (KCl)': 'Sulphur',
+  'Sulfur_KCl': 'Sulphur',
+  'Aluminium': 'Aluminium',
+  'Silicon (CaCl2)': 'Silicon',
+  'Silicon_CaCl2': 'Silicon',
+  'Boron (Hot CaCl2)': 'Boron',
+  'Boron_Hot_CaCl2': 'Boron',
+  'Iron (DTPA)': 'Iron',
+  'Iron_DTPA': 'Iron',
+  'Manganese (DTPA)': 'Manganese',
+  'Manganese_DTPA': 'Manganese',
+  'Copper (DTPA)': 'Copper',
+  'Copper_DTPA': 'Copper',
+  'Zinc (DTPA)': 'Zinc',
+  'Zinc_DTPA': 'Zinc',
+  // Base Saturation
+  'Base Saturation Calcium': 'Calcium',
+  'Base Saturation Magnesium': 'Magnesium',
+  'Base Saturation Potassium': 'Potassium',
+  'Base Saturation Sodium': 'Sodium',
+  'Base Saturation Aluminium': 'Aluminium',
+  'Base Saturation Hydrogen': 'Hydrogen',
+  'Base Saturation Other Bases': 'Other_Bases',
+  'Calcium': 'Calcium',
+  'Magnesium': 'Magnesium',
+  'Potassium': 'Potassium',
+  'Sodium': 'Sodium',
+  'Aluminum': 'Aluminium',
+  'Hydrogen': 'Hydrogen',
+  'Other Bases': 'Other_Bases',
+  // Lamotte/Reams
+  'LaMotte Calcium': 'Calcium',
+  'LaMotte Magnesium': 'Magnesium',
+  'LaMotte Phosphorus': 'Phosphorus',
+  'LaMotte Potassium': 'Potassium',
+  'Calcium_LaMotte': 'Calcium',
+  'Magnesium_LaMotte': 'Magnesium',
+  'Phosphorus_LaMotte': 'Phosphorus',
+  'Potassium_LaMotte': 'Potassium',
+  // TAE
+  'Sodium TAE': 'Sodium',
+  'Potassium TAE': 'Potassium',
+  'Calcium TAE': 'Calcium',
+  'Magnesium TAE': 'Magnesium',
+  'Phosphorus TAE': 'Phosphorus',
+  'Aluminium TAE': 'Aluminium',
+  'Copper TAE': 'Copper',
+  'Iron TAE': 'Iron',
+  'Manganese TAE': 'Manganese',
+  'Selenium TAE': 'Selenium',
+  'Zinc TAE': 'Zinc',
+  'Boron TAE': 'Boron',
+  'Silicon TAE': 'Silicon',
+  'Cobalt TAE': 'Cobalt',
+  'Molybdenum TAE': 'Molybdenum',
+  'Sulfur TAE': 'Sulphur',
+};
+
 // Add this mapping at the top, after allowedNutrients
 const fertilizerDescriptions: Record<string, string> = {
   'Agricultural Limestone (CaCO₃)': 'Raises soil pH and supplies calcium to improve soil structure and nutrient availability.',
@@ -1058,7 +1131,7 @@ const SoilReportGenerator: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {sortedNutrients.map(n => {
+            {sortedNutrients.map((n, idx) => {
               const nutrient = n.name;
               const data = nutrientTotals[nutrient] || { total: 0, sources: {} };
               const totalApplied = Number(data.total) || 0; // kg/ha from all sources
@@ -2538,26 +2611,70 @@ const SoilReportGenerator: React.FC = () => {
     setLoadingGeneralComments(true);
     setErrorGeneralComments(null);
     try {
-      // TODO: Ensure your backend exposes this endpoint and returns the expected fields
-      const response = await fetch('/api/generate-soil-comments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nutrients: sourceNutrients,
-          paddock: selectedPaddocks[0] || '',
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to generate comments');
-      const data = await response.json();
-      setGeneralComments({
-        organicMatter: data.organicMatter || '',
-        cec: data.cec || '',
-        soilPh: data.soilPh || '',
-        baseSaturation: data.baseSaturation || '',
-        availableNutrients: data.availableNutrients || '',
-        lamotteReams: data.lamotteReams || '',
-        tae: data.tae || '',
-      });
+      // Define nutrient groups for each section
+      const sectionNutrientMap = {
+        organicMatter: ['Organic Matter (Calc)', 'Organic Carbon (LECO)'],
+        cec: ['CEC', 'TEC'],
+        soilPh: ['pH-level (1:5 water)'],
+        baseSaturation: [
+          'Base Saturation Calcium', 'Base Saturation Magnesium', 'Base Saturation Potassium',
+          'Base Saturation Sodium', 'Base Saturation Aluminium', 'Base Saturation Hydrogen', 'Base Saturation Other Bases'
+        ],
+        availableNutrients: [
+          'Nitrate-N (KCl)', 'Ammonium-N (KCl)', 'Phosphorus (Mehlich III)', 'Calcium (Mehlich III)',
+          'Magnesium (Mehlich III)', 'Potassium (Mehlich III)', 'Sodium (Mehlich III)', 'Sulfur (KCl)',
+          'Aluminium', 'Silicon (CaCl2)', 'Boron (Hot CaCl2)', 'Iron (DTPA)', 'Manganese (DTPA)', 'Copper (DTPA)', 'Zinc (DTPA)'
+        ],
+        lamotteReams: [
+          'LaMotte Calcium', 'LaMotte Magnesium', 'LaMotte Phosphorus', 'LaMotte Potassium'
+        ],
+        tae: [
+          'Sodium TAE', 'Potassium TAE', 'Calcium TAE', 'Magnesium TAE', 'Phosphorus TAE',
+          'Aluminium TAE', 'Copper TAE', 'Iron TAE', 'Manganese TAE', 'Selenium TAE',
+          'Zinc TAE', 'Boron TAE', 'Silicon TAE', 'Cobalt TAE', 'Molybdenum TAE', 'Sulfur TAE'
+        ],
+      };
+      const newComments = {};
+      for (const [section, names] of Object.entries(sectionNutrientMap)) {
+        const sectionNutrients = sourceNutrients.filter(n => names.includes(n.name));
+        const nutrientsWithStatus = sectionNutrients.map(n => {
+          let status = 'optimal';
+          if (n.ideal_range && Array.isArray(n.ideal_range) && n.ideal_range.length === 2) {
+            if (n.current < n.ideal_range[0]) status = 'low';
+            else if (n.current > n.ideal_range[1]) status = 'high';
+            else status = 'optimal';
+          } else if (n.ideal !== undefined && n.current !== undefined) {
+            if (n.current < 0.9 * n.ideal) status = 'low';
+            else if (n.current > 1.1 * n.ideal) status = 'high';
+          }
+          return { ...n, status };
+        });
+        const deficient = nutrientsWithStatus.filter(n => n.status === 'low').map(n => n.name);
+        const optimal = nutrientsWithStatus.filter(n => n.status === 'optimal').map(n => n.name);
+        const excess = nutrientsWithStatus.filter(n => n.status === 'high').map(n => n.name);
+        
+        // Use the new soil-specific endpoint with section data
+        const response = await fetch('/generate-soil-comments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            section,
+            deficient, 
+            optimal, 
+            excess,
+            nutrients: sectionNutrients.map(n => ({
+              name: n.name,
+              current: n.current,
+              ideal: n.ideal,
+              unit: n.unit,
+              ideal_range: n.ideal_range
+            }))
+          }),
+        });
+        const data = await response.json();
+        newComments[section] = data.summary || '';
+      }
+      setGeneralComments(gc => ({ ...gc, ...newComments }));
     } catch (err) {
       setErrorGeneralComments('Failed to generate comments.');
     } finally {
@@ -3189,26 +3306,6 @@ const SoilReportGenerator: React.FC = () => {
                 )}
               </ReportSection>
 
-              {/* 5. Total Nutrient Recommendation Summary (previously "Total Nutrient Application") */}
-              <ReportSection title="5. Total Nutrient Recommendation Summary" collapsible expanded={showSection5} onToggle={() => setShowSection5(v => !v)} useHideButton={true} infoContent={"Shows the total nutrients applied from all sources and compares them to your soil's requirements. Helps ensure balanced nutrition and avoid excesses."}>
-                {showSection5 && (
-                  <TotalNutrientApplicationTable
-                    mainNutrients={dedupedMainNutrients}
-                    nutrients={dedupedMainNutrients}
-                    soilAmendmentsSummary={soilAmendmentsSummary}
-                    seedTreatmentProducts={seedTreatmentProducts}
-                    soilDrenchProducts={soilDrenchProducts}
-                    foliarSprayProducts={allFoliarSprayProducts}
-                    soilAmendmentFerts={soilAmendmentFerts}
-                    seedTreatmentDefs={seedTreatmentDefs}
-                    soilDrenchDefs={soilDrenchDefs}
-                    foliarSprayDefs={foliarSprayDefs}
-                    heading="Total Nutrient Recommendation Summary"
-                    showSourceBreakdown={false}
-                    newNutrientLevels={newNutrientLevels}
-                  />
-                )}
-              </ReportSection>
 
               {/* 6. PDF Attachments */}
               <ReportSection title="6. PDF Attachments" collapsible expanded={showSection6} onToggle={() => setShowSection6(v => !v)} useHideButton={true} infoContent={"Attach supporting PDF documents, such as lab reports or additional recommendations, to include in your final report export."}>

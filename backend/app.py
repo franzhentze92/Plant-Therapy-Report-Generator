@@ -548,6 +548,157 @@ Focus on:
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/generate-soil-comments', methods=['POST'])
+def generate_soil_comments():
+    try:
+        data = request.get_json()
+        section = data.get('section', '')
+        deficient = data.get('deficient', [])
+        optimal = data.get('optimal', [])
+        excess = data.get('excess', [])
+        nutrients_data = data.get('nutrients', [])
+
+        # Create section-specific prompts
+        section_prompts = {
+            'organicMatter': f"""
+As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's organic matter status for a Soil Therapy Report.
+
+ORGANIC MATTER DATA: {', '.join([
+    f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Ideal Range: {n.get('ideal_range', [None, None])[0]}–{n.get('ideal_range', [None, None])[1]} {n.get('unit', '')})" if n.get('ideal_range') else f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Target: {n.get('ideal', 'N/A')})" for n in nutrients_data
+])}
+
+DEFICIENT: {', '.join(deficient) if deficient else 'None'}
+OPTIMAL: {', '.join(optimal) if optimal else 'None'}
+EXCESS: {', '.join(excess) if excess else 'None'}
+
+IMPORTANT: Only call a nutrient 'deficient' if its value is below the lower bound of the ideal range, and 'excess' if above the upper bound. If it is within the range, call it 'optimal'.
+
+Provide a 2-3 sentence analysis focusing on:
+- **Organic matter levels** and their implications for soil health and fertility
+- Impact on **nutrient availability**, **soil structure**, and **water retention**
+- Brief mention of **management strategies** to improve organic matter if needed
+Use professional soil science terminology and bold formatting for key terms. Focus on practical implications for crop production.
+""",
+            'cec': f"""
+As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's Cation Exchange Capacity (CEC) for a Soil Therapy Report.
+
+CEC DATA: {', '.join([f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Target: {n.get('ideal', 'N/A')})" for n in nutrients_data])}
+
+DEFICIENT: {', '.join(deficient) if deficient else 'None'}
+OPTIMAL: {', '.join(optimal) if optimal else 'None'}
+EXCESS: {', '.join(excess) if excess else 'None'}
+
+Provide a 2-3 sentence analysis focusing on:
+- **CEC levels** and their impact on **nutrient retention** and **soil fertility**
+- Implications for **fertilizer efficiency** and **nutrient availability** to plants
+- Brief mention of **soil management** considerations for optimal crop nutrition
+Use professional soil science terminology and bold formatting for key terms. Focus on practical implications for fertilizer management.
+""",
+            'soilPh': f"""
+As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's pH status for a Soil Therapy Report.
+
+pH DATA: {', '.join([f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Target: {n.get('ideal', 'N/A')})" for n in nutrients_data])}
+
+DEFICIENT: {', '.join(deficient) if deficient else 'None'}
+OPTIMAL: {', '.join(optimal) if optimal else 'None'}
+EXCESS: {', '.join(excess) if excess else 'None'}
+
+Provide a 2-3 sentence analysis focusing on:
+- **pH levels** and their impact on **nutrient availability** and **plant uptake**
+- Implications for **soil biology**, **microbial activity**, and **crop performance**
+- Brief mention of **pH management strategies** if adjustment is needed
+Use professional soil science terminology and bold formatting for key terms. Focus on practical implications for crop nutrition and soil health.
+""",
+            'baseSaturation': f"""
+As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's base saturation for a Soil Therapy Report.
+
+BASE SATURATION DATA: {', '.join([f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Target: {n.get('ideal', 'N/A')})" for n in nutrients_data])}
+
+DEFICIENT: {', '.join(deficient) if deficient else 'None'}
+OPTIMAL: {', '.join(optimal) if optimal else 'None'}
+EXCESS: {', '.join(excess) if excess else 'None'}
+
+Provide a 2-3 sentence analysis focusing on:
+- **Base saturation levels** and their implications for **soil fertility** and **nutrient balance**
+- Impact on **cation availability** and **soil chemistry** for optimal crop nutrition
+- Brief mention of **management implications** for maintaining proper cation ratios
+Use professional soil science terminology and bold formatting for key terms. Focus on practical implications for soil fertility management.
+""",
+            'availableNutrients': f"""
+As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's available nutrients for a Soil Therapy Report.
+
+AVAILABLE NUTRIENTS DATA: {', '.join([f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Target: {n.get('ideal', 'N/A')})" for n in nutrients_data])}
+
+DEFICIENT: {', '.join(deficient) if deficient else 'None'}
+OPTIMAL: {', '.join(optimal) if optimal else 'None'}
+EXCESS: {', '.join(excess) if excess else 'None'}
+
+Provide a 2-3 sentence analysis focusing on:
+- **Key nutrient deficiencies** or **excesses** and their impact on **crop nutrition**
+- Implications for **plant growth**, **yield potential**, and **nutrient uptake efficiency**
+- Brief mention of **fertilization priorities** and **nutrient management strategies**
+Use professional soil science terminology and bold formatting for key terms. Focus on practical implications for crop production and soil fertility.
+""",
+            'lamotteReams': f"""
+As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's LaMotte/Reams test results for a Soil Therapy Report.
+
+LAMOTTE/REAMS DATA: {', '.join([f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Target: {n.get('ideal', 'N/A')})" for n in nutrients_data])}
+
+DEFICIENT: {', '.join(deficient) if deficient else 'None'}
+OPTIMAL: {', '.join(optimal) if optimal else 'None'}
+EXCESS: {', '.join(excess) if excess else 'None'}
+
+Provide a 2-3 sentence analysis focusing on:
+- **LaMotte/Reams test results** and their significance for **soil fertility assessment**
+- Implications for **nutrient availability** and **plant nutrition** based on this specialized testing method
+- Brief mention of **management considerations** for optimizing soil fertility based on these results
+Use professional soil science terminology and bold formatting for key terms. Focus on practical implications for soil fertility management.
+""",
+            'tae': f"""
+As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's Total Available Elements (TAE) for a Soil Therapy Report.
+
+TAE DATA: {', '.join([f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Target: {n.get('ideal', 'N/A')})" for n in nutrients_data])}
+
+DEFICIENT: {', '.join(deficient) if deficient else 'None'}
+OPTIMAL: {', '.join(optimal) if optimal else 'None'}
+EXCESS: {', '.join(excess) if excess else 'None'}
+
+Provide a 2-3 sentence analysis focusing on:
+- **TAE levels** and their implications for **soil fertility** and **nutrient reserves**
+- Impact on **nutrient availability** and **plant nutrition** based on total element analysis
+- Brief mention of **management implications** for optimizing soil fertility and crop nutrition
+Use professional soil science terminology and bold formatting for key terms. Focus on practical implications for soil fertility management.
+"""
+        }
+
+        prompt = section_prompts.get(section, f"""
+As a professional soil scientist and agronomist, provide a BRIEF analysis for a Soil Therapy Report.
+
+SECTION: {section}
+DEFICIENT: {', '.join(deficient) if deficient else 'None'}
+OPTIMAL: {', '.join(optimal) if optimal else 'None'}
+EXCESS: {', '.join(excess) if excess else 'None'}
+
+Provide a 2-3 sentence analysis focusing on soil health and fertility implications.
+Use professional soil science terminology and bold formatting for key terms.
+""")
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300,
+            temperature=0.7
+        )
+        summary = response.choices[0].message.content.strip()
+
+        # Clean up any overly detailed responses
+        import re
+        cleaned = re.sub(r"\n{3,}", "\n\n", summary)
+        return jsonify({'summary': cleaned.strip()})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
