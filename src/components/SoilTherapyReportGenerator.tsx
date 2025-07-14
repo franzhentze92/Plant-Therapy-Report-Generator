@@ -2628,8 +2628,7 @@ const SoilReportGenerator: React.FC = () => {
         cec: ['CEC', 'TEC'],
         soilPh: ['pH-level (1:5 water)'],
         baseSaturation: [
-          'Base Saturation Calcium', 'Base Saturation Magnesium', 'Base Saturation Potassium',
-          'Base Saturation Sodium', 'Base Saturation Aluminium', 'Base Saturation Hydrogen', 'Base Saturation Other Bases'
+          'Calcium', 'Magnesium', 'Potassium', 'Sodium', 'Aluminum', 'Hydrogen', 'Other_Bases'
         ],
         availableNutrients: [
           'Nitrate-N (KCl)', 'Ammonium-N (KCl)', 'Phosphorus (Mehlich III)', 'Calcium (Mehlich III)',
@@ -2637,7 +2636,7 @@ const SoilReportGenerator: React.FC = () => {
           'Aluminium', 'Silicon (CaCl2)', 'Boron (Hot CaCl2)', 'Iron (DTPA)', 'Manganese (DTPA)', 'Copper (DTPA)', 'Zinc (DTPA)'
         ],
         lamotteReams: [
-          'LaMotte Calcium', 'LaMotte Magnesium', 'LaMotte Phosphorus', 'LaMotte Potassium'
+          'Calcium_LaMotte', 'Magnesium_LaMotte', 'Phosphorus_LaMotte', 'Potassium_LaMotte'
         ],
         tae: [
           'Sodium TAE', 'Potassium TAE', 'Calcium TAE', 'Magnesium TAE', 'Phosphorus TAE',
@@ -2647,11 +2646,20 @@ const SoilReportGenerator: React.FC = () => {
       };
       const newComments = {};
       for (const [section, names] of Object.entries(sectionNutrientMap)) {
-        const sectionNutrients = sourceNutrients.filter(n => names.includes(n.name));
+        const sectionNutrients = section === 'lamotteReams'
+          ? sourceNutrients.filter(n => ['Calcium', 'Magnesium', 'Phosphorus', 'Potassium'].includes(n.name) && n.unit === 'ppm')
+          : sourceNutrients.filter(n => names.includes(n.name));
         
         // Debug logging for organicMatter section
         if (section === 'organicMatter') {
           console.log('DEBUG - Organic Matter section nutrients:', sectionNutrients);
+          sectionNutrients.forEach(n => {
+            console.log(`  ${n.name}: current=${n.current}, ideal=${n.ideal}, ideal_range=${n.ideal_range}`);
+          });
+        }
+        // Debug logging for baseSaturation section
+        if (section === 'baseSaturation') {
+          console.log('DEBUG - Base Saturation section nutrients:', sectionNutrients);
           sectionNutrients.forEach(n => {
             console.log(`  ${n.name}: current=${n.current}, ideal=${n.ideal}, ideal_range=${n.ideal_range}`);
           });
@@ -2673,6 +2681,13 @@ const SoilReportGenerator: React.FC = () => {
         // Debug logging for organicMatter section status
         if (section === 'organicMatter') {
           console.log('DEBUG - Organic Matter section status calculation:');
+          nutrientsWithStatus.forEach(n => {
+            console.log(`  ${n.name}: current=${n.current}, status=${n.status}`);
+          });
+        }
+        // Debug logging for baseSaturation section status
+        if (section === 'baseSaturation') {
+          console.log('DEBUG - Base Saturation section status calculation:');
           nutrientsWithStatus.forEach(n => {
             console.log(`  ${n.name}: current=${n.current}, status=${n.status}`);
           });

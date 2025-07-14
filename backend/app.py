@@ -689,17 +689,32 @@ Use professional soil science terminology and bold formatting for key terms. Foc
             'lamotteReams': f"""
 As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's LaMotte/Reams test results for a Soil Therapy Report.
 
-LAMOTTE/REAMS DATA: {', '.join([f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Target: {n.get('ideal', 'N/A')})" for n in nutrients_data])}
+LAMOTTE/REAMS DATA: {', '.join([
+    f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')} (Ideal Range: {n.get('ideal_range', [None, None])[0]}–{n.get('ideal_range', [None, None])[1]} {n.get('unit', '')})"
+    if n.get('ideal_range') else
+    f"{n.get('name', 'Unknown')}: {n.get('current', 'N/A')} {n.get('unit', '')}"
+    for n in nutrients_data
+])}
 
 DEFICIENT: {', '.join(deficient) if deficient else 'None'}
 OPTIMAL: {', '.join(optimal) if optimal else 'None'}
 EXCESS: {', '.join(excess) if excess else 'None'}
 
-Provide a 2-3 sentence analysis focusing on:
-- **LaMotte/Reams test results** and their significance for **soil fertility assessment**
-- Implications for **nutrient availability** and **plant nutrition** based on this specialized testing method
-- Brief mention of **management considerations** for optimizing soil fertility based on these results
-Use professional soil science terminology and bold formatting for key terms. Focus on practical implications for soil fertility management.
+CRITICAL INSTRUCTIONS:
+- Use ONLY the ideal range for determining nutrient status.
+- A nutrient is "deficient" if current value < lower bound of ideal range.
+- A nutrient is "excess" if current value > upper bound of ideal range.
+- A nutrient is "optimal" if current value is within the ideal range (including bounds).
+- IGNORE any target values - use only the ideal range.
+- You MUST use the DEFICIENT, OPTIMAL, and EXCESS lists above to describe the nutrient status in your summary.
+
+In your summary, clearly state which nutrients are deficient, optimal, or in excess, using the DEFICIENT, OPTIMAL, and EXCESS lists above. Integrate this information naturally into your 2-3 sentence analysis, as you would for other sections. Do not use a separate status line or bullet points.
+
+Focus on:
+- **Key nutrient deficiencies** or **excesses** and their impact on **crop nutrition**
+- Implications for **plant growth**, **yield potential**, and **nutrient uptake efficiency**
+- Brief mention of **fertilization priorities** and **nutrient management strategies**
+Use professional soil science terminology and bold formatting for key terms. Focus on practical implications for crop production and soil fertility.
 """,
             'tae': f"""
 As a professional soil scientist and agronomist, provide a BRIEF analysis of the soil's Total Available Elements (TAE) for a Soil Therapy Report.
