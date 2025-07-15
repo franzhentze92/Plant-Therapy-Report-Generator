@@ -445,10 +445,25 @@ const SoilReportGenerator: React.FC = () => {
   const [availableNutrientsText, setAvailableNutrientsText] = useState('Available nutrient analysis shows phosphorus at 45 ppm, potassium at 180 ppm, and sulfur at 12 ppm. Micronutrient levels include zinc at 2.1 ppm, iron at 25 ppm, and manganese at 8.5 ppm. These concentrations reflect the current soil fertility status and plant-available nutrient pool.');
   const [soilReservesText, setSoilReservesText] = useState('Total soil reserves indicate substantial mineral content with slow-release potential. The clay fraction shows good mineral diversity, while organic reserves contribute to long-term nutrient cycling. Reserve analysis suggests sustainable nutrient supply capacity over multiple growing seasons.');
   const [seedTreatmentProducts, setSeedTreatmentProducts] = useState([
-    { id: '1', product: 'Root & Shoot', rate: '3-4', unit: 'L/tonne of seed' },
-    { id: '2', product: 'Nutri-Life BAM', rate: '5', unit: 'L/tonne of seed' },
-    { id: '3', product: 'Nutri-Life Platform', rate: '1.3', unit: 'kg/tonne of seed' }
-  ]);
+    {
+      id: '1',
+      product: 'Root & Shoot',
+      rate: '3-4',
+      unit: 'L/tonne of seed'
+    },
+    {
+      id: '2',
+      product: 'Nutri-Life BAM',
+      rate: '5',
+      unit: 'L/tonne of seed'
+    },
+    {
+      id: '3',
+      product: 'Nutri-Life Platform',
+      rate: '1.3',
+      unit: 'kg/tonne of seed'
+    }
+  ]); // Start with none selected
   const [soilDrenchProducts, setSoilDrenchProducts] = useState([]);
   const [foliarSprayProducts, setFoliarSprayProducts] = useState([]);
   const [selectedFertilizers, setSelectedFertilizers] = useState({});
@@ -3108,6 +3123,7 @@ const SoilReportGenerator: React.FC = () => {
                         <SeedTreatment
                           selectedProducts={seedTreatmentProducts}
                           setSelectedProducts={setSeedTreatmentProducts}
+                          productOptions={soilDrenchDefs} // Use Biological Fertigation Program products for dropdown
                         />
                       </CardContent>
                     </Card>
@@ -3118,6 +3134,7 @@ const SoilReportGenerator: React.FC = () => {
                         <PlantingBlend
                           selectedProducts={plantingBlendProducts}
                           setSelectedProducts={setPlantingBlendProducts}
+                          productOptions={soilDrenchDefs} // Use Biological Fertigation Program products for dropdown
                         />
                       </CardContent>
                     </Card>

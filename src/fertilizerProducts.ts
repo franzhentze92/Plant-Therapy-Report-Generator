@@ -82,6 +82,13 @@ function slugify(str) {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
 
+function formatNutrientBreakdown(nutrientContent) {
+  if (!nutrientContent || Object.keys(nutrientContent).length === 0) return '';
+  return Object.entries(nutrientContent)
+    .map(([nutrient, value]) => `${nutrient}: ${value}%`)
+    .join(', ');
+}
+
 export const soilDrenchProducts = productList.map(product => ({
   ...product,
   value: slugify(product.label),
@@ -89,6 +96,7 @@ export const soilDrenchProducts = productList.map(product => ({
   defaultUnit: 'L/ha',
   contains: [],
   nutrientPercents: [],
+  nutrientBreakdown: formatNutrientBreakdown(product.nutrientContent),
 }));
 
 export const foliarSprayProducts = productList.map(product => ({
@@ -98,6 +106,7 @@ export const foliarSprayProducts = productList.map(product => ({
   defaultUnit: 'L/ha',
   contains: [],
   nutrientPercents: [],
+  nutrientBreakdown: formatNutrientBreakdown(product.nutrientContent),
 }));
 
 export const ammoniumNitrateFerts = [

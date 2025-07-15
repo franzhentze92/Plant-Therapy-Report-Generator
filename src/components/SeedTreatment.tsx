@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Sprout, X } from 'lucide-react';
-import { seedTreatmentProducts as products } from '../fertilizerProducts';
 
 interface SelectedProduct {
   id: string;
@@ -18,9 +17,11 @@ interface SelectedProduct {
 interface SeedTreatmentProps {
   selectedProducts: SelectedProduct[];
   setSelectedProducts: React.Dispatch<React.SetStateAction<SelectedProduct[]>>;
+  productOptions?: any[]; // Add this prop
 }
 
-const SeedTreatment: React.FC<SeedTreatmentProps> = ({ selectedProducts, setSelectedProducts }) => {
+const SeedTreatment: React.FC<SeedTreatmentProps> = ({ selectedProducts, setSelectedProducts, productOptions }) => {
+  const products = productOptions || require('../fertilizerProducts').seedTreatmentProducts;
   const [currentProduct, setCurrentProduct] = useState('');
   const [currentRate, setCurrentRate] = useState('');
   const [currentUnit, setCurrentUnit] = useState('');
@@ -79,17 +80,20 @@ const SeedTreatment: React.FC<SeedTreatmentProps> = ({ selectedProducts, setSele
                       <SelectContent>
                         {products.map((product) => (
                           <SelectItem key={product.value} value={product.value}>
-                            <a
-                              href={`https://www.nutri-tech.com.au/products/${product.value}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline"
-                            >
-                              {product.label}
-                            </a>
-                            {product.nutrientPercents && (
-                              <span className="text-xs text-gray-500 ml-2">({product.nutrientPercents.join(', ')})</span>
-                            )}
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-1">
+                                <span className="font-semibold text-black">{product.label}</span>
+                                <a href={`https://www.nutri-tech.com.au/products/${product.value}`} target="_blank" rel="noopener noreferrer" className="ml-1 text-blue-600" style={{fontSize: '14px'}}>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6m3-3h6m0 0v6m0-6L10 14"/></svg>
+                                </a>
+                              </div>
+                              {product.nutrientPercents && product.nutrientPercents.length > 0 && (
+                                <div className="text-xs text-gray-500 mt-0.5">{product.nutrientPercents.join(', ')}</div>
+                              )}
+                              {product.nutrientBreakdown && (
+                                <div className="text-xs text-gray-400 mt-0.5">{product.nutrientBreakdown}</div>
+                              )}
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -178,7 +182,8 @@ const SeedTreatment: React.FC<SeedTreatmentProps> = ({ selectedProducts, setSele
   );
 };
 
-export const PlantingBlend: React.FC<SeedTreatmentProps> = ({ selectedProducts, setSelectedProducts }) => {
+export const PlantingBlend: React.FC<SeedTreatmentProps> = ({ selectedProducts, setSelectedProducts, productOptions }) => {
+  const products = productOptions || require('../fertilizerProducts').seedTreatmentProducts;
   const [currentProduct, setCurrentProduct] = useState('');
   const [currentRate, setCurrentRate] = useState('');
   const [currentUnit, setCurrentUnit] = useState('');
@@ -236,17 +241,20 @@ export const PlantingBlend: React.FC<SeedTreatmentProps> = ({ selectedProducts, 
                       <SelectContent>
                         {products.map((product) => (
                           <SelectItem key={product.value} value={product.value}>
-                            <a
-                              href={`https://www.nutri-tech.com.au/products/${product.value}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-orange-600 hover:underline"
-                            >
-                              {product.label}
-                            </a>
-                            {product.nutrientPercents && (
-                              <span className="text-xs text-gray-500 ml-2">({product.nutrientPercents.join(', ')})</span>
-                            )}
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-1">
+                                <span className="font-semibold text-black">{product.label}</span>
+                                <a href={`https://www.nutri-tech.com.au/products/${product.value}`} target="_blank" rel="noopener noreferrer" className="ml-1 text-orange-600" style={{fontSize: '14px'}}>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6m3-3h6m0 0v6m0-6L10 14"/></svg>
+                                </a>
+                              </div>
+                              {product.nutrientPercents && product.nutrientPercents.length > 0 && (
+                                <div className="text-xs text-gray-500 mt-0.5">{product.nutrientPercents.join(', ')}</div>
+                              )}
+                              {product.nutrientBreakdown && (
+                                <div className="text-xs text-gray-400 mt-0.5">{product.nutrientBreakdown}</div>
+                              )}
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -295,7 +303,7 @@ export const PlantingBlend: React.FC<SeedTreatmentProps> = ({ selectedProducts, 
                 {selectedProducts.map((product) => {
                   const productData = products.find(p => p.label === product.product);
                   return (
-                    <Card key={product.id} className="bg-orange-100 border-l-4 border-l-orange-500">
+                    <Card key={product.id} className="bg-purple-100 border-l-4 border-l-purple-500">
                       <CardContent className="pt-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-start space-x-3">
@@ -306,7 +314,7 @@ export const PlantingBlend: React.FC<SeedTreatmentProps> = ({ selectedProducts, 
                                   <span className="text-xs text-gray-500 ml-2">({productData.contains.join(', ')})</span>
                                 )}
                               </h5>
-                              <p className="text-sm text-orange-700">Rate: {product.rate} {product.unit}</p>
+                              <p className="text-sm text-purple-700">Rate: {product.rate} {product.unit}</p>
                             </div>
                           </div>
                           <Button
