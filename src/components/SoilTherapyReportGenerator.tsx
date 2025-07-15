@@ -2457,7 +2457,7 @@ const SoilReportGenerator: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {nutrients.map((n, idx) => {
+              {nutrients.filter(n => !(n.current === undefined && n.ideal === undefined && (!n.ideal_range || n.ideal_range.length === 0))).map((n, idx) => {
                 const { bar, color, status, low, high, value, unit, score } = getBarData(n);
                 return (
                   <tr key={n.name + '_' + (n.category || idx)}>
@@ -2583,6 +2583,46 @@ const SoilReportGenerator: React.FC = () => {
       let canonical = nameMap[n.name] || n.name;
       if (canonicalList.includes(canonical)) {
         parsedLookup[canonical] = n;
+      }
+    });
+    // PATCH: Map LaMotte/Reams values if present as 'Calcium', 'Magnesium', etc. with unit 'ppm'
+    ['Calcium', 'Magnesium', 'Phosphorus', 'Potassium'].forEach(element => {
+      const lamotteKey = element + '_LaMotte';
+      let parsed = parsedLookup[element];
+      // For Phosphorus, pick the one with ideal in LaMotte range (7–30) if multiple exist
+      if (element === 'Phosphorus') {
+        const candidates = parsedNutrients.filter(n =>
+          n.name === 'Phosphorus' &&
+          n.unit &&
+          n.unit.toLowerCase() === 'ppm' &&
+          n.ideal !== undefined &&
+          n.ideal >= 7 && n.ideal <= 30
+        );
+        if (candidates.length > 0) {
+          parsed = candidates[0];
+        }
+      }
+      let value = parsed && typeof parsed.current !== 'undefined' ? parsed.current : '';
+      // Treat '-', '', or values starting with '<' as 0
+      if (typeof value === 'string' && (value.trim() === '' || value.trim() === '-' || value.trim().startsWith('<'))) {
+        value = 0;
+      }
+      // If missing, set to 0
+      if (!parsed && element === 'Phosphorus') {
+        parsedLookup[lamotteKey] = { name: lamotteKey, current: 0, unit: 'ppm' };
+        console.log('DEBUG: No Phosphorus found in parsed nutrients, setting Phosphorus_LaMotte to 0');
+        return;
+      }
+      if (
+        !parsedLookup[lamotteKey] &&
+        parsed &&
+        parsed.unit &&
+        parsed.unit.toLowerCase() === 'ppm'
+      ) {
+        if (element === 'Phosphorus') {
+          console.log('DEBUG: Mapping Phosphorus_LaMotte from', parsed);
+        }
+        parsedLookup[lamotteKey] = { ...parsed, name: lamotteKey, current: value };
       }
     });
     // Build unified array
@@ -2840,7 +2880,7 @@ const SoilReportGenerator: React.FC = () => {
                     </div> */}
                     {/* --- Comprehensive Nutrient Table Section --- */}
                     <div className="mb-4">
-                      <ComprehensiveNutrientTable nutrients={Array.isArray(nutrients) ? nutrients : getUnifiedNutrients(nutrients)} />
+                      <ComprehensiveNutrientTable nutrients={unifiedNutrientRows} />
                       {showThresholdsPopup && (
                         <NutrientThresholdsPopup
                           nutrients={unifiedNutrients.map(n => n.name)}
