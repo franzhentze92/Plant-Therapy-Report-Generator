@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Sprout, X } from 'lucide-react';
+import { PRODUCT_INFO, normalizeProductName } from './ClientReportExport';
 
 interface SelectedProduct {
   id: string;
@@ -145,6 +146,10 @@ const SeedTreatment: React.FC<SeedTreatmentProps> = ({ selectedProducts, setSele
                 <h4 className="font-medium text-black">Selected Products:</h4>
                 {selectedProducts.map((product) => {
                   const productData = products.find(p => p.label === product.product);
+                  // Use PRODUCT_INFO with normalization if available
+                  const normalized = normalizeProductName(product.product);
+                  const info = PRODUCT_INFO[normalized];
+                  const description = info?.description || productData?.description;
                   return (
                     <Card key={product.id} className="bg-purple-100 border-l-4 border-l-purple-500">
                       <CardContent className="pt-4">
@@ -158,6 +163,9 @@ const SeedTreatment: React.FC<SeedTreatmentProps> = ({ selectedProducts, setSele
                                 )}
                               </h5>
                               <p className="text-sm text-purple-700">Rate: {product.rate} {product.unit}</p>
+                              {description && (
+                                <p className="text-xs text-gray-700 mt-1">{description}</p>
+                              )}
                             </div>
                           </div>
                           <Button
@@ -302,6 +310,10 @@ export const PlantingBlend: React.FC<SeedTreatmentProps> = ({ selectedProducts, 
                 <h4 className="font-medium text-black">Selected Products:</h4>
                 {selectedProducts.map((product) => {
                   const productData = products.find(p => p.label === product.product);
+                  // Use PRODUCT_INFO with normalization if available
+                  const normalized = normalizeProductName(product.product);
+                  const info = PRODUCT_INFO[normalized];
+                  const description = info?.description || productData?.description;
                   return (
                     <Card key={product.id} className="bg-purple-100 border-l-4 border-l-purple-500">
                       <CardContent className="pt-4">
@@ -315,6 +327,9 @@ export const PlantingBlend: React.FC<SeedTreatmentProps> = ({ selectedProducts, 
                                 )}
                               </h5>
                               <p className="text-sm text-purple-700">Rate: {product.rate} {product.unit}</p>
+                              {description && (
+                                <p className="text-xs text-gray-700 mt-1">{description}</p>
+                              )}
                             </div>
                           </div>
                           <Button

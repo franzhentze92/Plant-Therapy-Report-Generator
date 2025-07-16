@@ -47,6 +47,11 @@ function productToSlug(name: string) {
     .replace(/^-+|-+$/g, '');
 }
 
+// Utility to normalize product names for lookup
+function normalizeProductName(name: string) {
+  return name.replace(/™|®/g, '').trim();
+}
+
 // Replace the SVG Star component with an emoji star styled with CSS
 const Star = ({ filled }: { filled: boolean }) => (
   <span
@@ -77,9 +82,13 @@ const PRODUCT_INFO = {
     group: 'Biological Fertigation Program',
     description: 'A Mycorrhizal fungi inoculum, also containing other beneficial microbes such as Trichoderma, enhancing nutrient uptake, root health, and plant resilience.'
   },
+  'Root & Shoot': {
+    group: 'Biological Fertigation Program',
+    description: 'A biological seed treatment containing beneficial microbes and biostimulants to enhance root development, early vigor, and plant resilience. Promotes strong germination and supports early plant health for improved crop establishment.'
+  },
   'Root & Shoot™': {
     group: 'Biological Fertigation Program',
-    description: 'A balanced seed treatment containing N, P, K, and trace elements to promote strong root and shoot growth.'
+    description: 'A biological seed treatment containing beneficial microbes and biostimulants to enhance root development, early vigor, and plant resilience. Promotes strong germination and supports early plant health for improved crop establishment.'
   },
   // Nutritional Fertigation/Foliar Spray Program
   'K-Rich™': {
@@ -299,6 +308,8 @@ const PRODUCT_GROUPS = [
   }
 ];
 
+export { PRODUCT_INFO, normalizeProductName };
+
 const ClientReportExport: React.FC<ClientReportExportProps> = ({
   crop,
   date,
@@ -324,7 +335,7 @@ const ClientReportExport: React.FC<ClientReportExportProps> = ({
   // Group products by program
   const groupedProducts = PRODUCT_GROUPS.map(group => ({
     ...group,
-    products: uniqueProducts.filter(name => PRODUCT_INFO[name]?.group === group.key)
+    products: uniqueProducts.filter(name => PRODUCT_INFO[normalizeProductName(name)]?.group === group.key)
   }));
 
   // Calculate stars for plant health score (0-100 mapped to 0-5 stars)
@@ -511,31 +522,36 @@ const ClientReportExport: React.FC<ClientReportExportProps> = ({
                   borderRadius: '6px',
                   border: '1px solid #dee2e6'
                 }}>
-                  {group.products.map((name, i) => (
-                    <li key={i} style={{ 
-                      marginBottom: 8,
-                      lineHeight: '1.5'
-                    }}>
-                      <a
-                        href={`https://www.nutri-tech.com.au/products/${productToSlug(name)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ 
-                          color: '#1a0dab', 
-                          textDecoration: 'underline', 
-                          fontWeight: 500, 
-                          fontStyle: 'italic' 
-                        }}
-                      >
-                        {name}
-                      </a>
-                      {PRODUCT_INFO[name]?.description && (
-                        <span style={{ color: '#222', fontWeight: 400, fontStyle: 'normal' }}>:
-                          <span dangerouslySetInnerHTML={{ __html: ' ' + PRODUCT_INFO[name].description }} />
-                        </span>
-                      )}
-                    </li>
-                  ))}
+                  {group.products.map((name, i) => {
+                    const normalized = normalizeProductName(name);
+                    const desc = PRODUCT_INFO[normalized]?.description;
+                    console.log('Looking up product:', name, 'Normalized:', normalized, 'Description:', desc);
+                    return (
+                      <li key={i} style={{ 
+                        marginBottom: 8,
+                        lineHeight: '1.5'
+                      }}>
+                        <a
+                          href={`https://www.nutri-tech.com.au/products/${productToSlug(name)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ 
+                            color: '#1a0dab', 
+                            textDecoration: 'underline', 
+                            fontWeight: 500, 
+                            fontStyle: 'italic' 
+                          }}
+                        >
+                          {name}
+                        </a>
+                        {desc && (
+                          <span style={{ color: '#222', fontWeight: 400, fontStyle: 'normal' }}>:
+                            <span dangerouslySetInnerHTML={{ __html: ' ' + desc }} />
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}

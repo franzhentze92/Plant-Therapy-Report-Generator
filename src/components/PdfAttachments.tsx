@@ -15,14 +15,15 @@ interface PdfAttachmentsProps {
 
 const PdfAttachments: React.FC<PdfAttachmentsProps> = ({ frontAttachments, setFrontAttachments, backAttachments, setBackAttachments, onSummaryChange }) => {
   const frontOptions = [
-    { id: 'plant-therapy-cover', label: 'Therapy Report Cover' }
+    { id: 'plant-therapy-cover', label: 'Plant Therapy Cover' },
+    { id: 'soil-therapy-cover', label: 'Soil Therapy Cover' }
   ];
 
   const backOptions = [
-    { id: 'humic', label: 'Humic Acid Recipe' },
-    { id: 'cover-crop', label: 'Cover Crop Mix Table' },
-    { id: 'fulvic', label: 'Fulvic Acid Recipe' },
-    { id: 'bam', label: 'BAM Recipe' }
+    { id: 'soil-therapy-general-guidelines', label: 'Soil Therapy General Guidelines' },
+    { id: 'seed-treatment-instructions', label: 'Seed Treatment Instructions' },
+    { id: 'micro-force-brewing-recipe', label: 'Micro-Force Brewing Recipe' },
+    { id: 'bam-brewing-recipe', label: 'BAM Brewing Recipe' }
   ];
 
   const handleFrontChange = (optionId: string, checked: boolean) => {

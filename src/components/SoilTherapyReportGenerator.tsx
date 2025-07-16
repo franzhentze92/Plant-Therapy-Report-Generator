@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { FileDown, Share2, Save, Leaf, Bean, Droplets, Sprout, Info, Beaker } from 'lucide-react';
 import { Settings } from 'lucide-react';
 import SoilUpload from './SoilUpload';
+import { productList } from '../fertilizerProducts';
 import NutrientSummary from './NutrientSummary';
 import GeneralCommentsSoil from './GeneralCommentsSoil';
 import SeedTreatment, { PlantingBlend } from './SeedTreatment';
@@ -27,6 +28,7 @@ import { DeviationBarChart as DeviationBarChartComponent, AbsoluteValueBarChart 
 import { ReferenceArea, Legend } from 'recharts';
 import SoilAnalysisChart from './SoilAnalysisChart';
 import SoilCorrections from './SoilCorrections';
+import PRODUCT_INFO from './ClientReportExport';
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 // Add this at the top of the file, before mockNutrients
@@ -447,7 +449,7 @@ const SoilReportGenerator: React.FC = () => {
   const [seedTreatmentProducts, setSeedTreatmentProducts] = useState([
     {
       id: '1',
-      product: 'Root & Shoot',
+      product: 'Root & Shoot™',
       rate: '3-4',
       unit: 'L/tonne of seed'
     },
@@ -2807,6 +2809,103 @@ baseSaturationNames.forEach(element => {
     }
   }
 
+  // Helper to get or generate a product description
+  function hasAIGenerator(): boolean {
+    return typeof window !== 'undefined' && typeof (window as any).generateProductDescriptionAI === 'function';
+  }
+  async function getProductDescription(prod, info) {
+    if (info && info.description) return info.description;
+    if (prod && prod.description) return prod.description;
+    // If no description, use AI to generate one
+    if (hasAIGenerator()) {
+      const aiDesc = await (window as any).generateProductDescriptionAI({
+        name: prod.label,
+        contains: prod.contains,
+        nutrientPercents: prod.nutrientPercents,
+        nutrientBreakdown: prod.nutrientBreakdown
+      });
+      return aiDesc;
+    }
+    // Fallback generic
+    return "A high-quality product designed to support plant health and growth.";
+  }
+  // Custom hook to manage async description fetching
+  function useProductDescription(prod, info) {
+    const [desc, setDesc] = React.useState(info?.description || prod?.description || "");
+    React.useEffect(() => {
+      let mounted = true;
+      if (!desc) {
+        getProductDescription(prod, info).then(d => { if (mounted) setDesc(d); });
+      }
+      return () => { mounted = false; };
+    }, [prod, info]);
+    return desc;
+  }
+
+  // Add state for all product descriptions
+  const [productDescriptions, setProductDescriptions] = React.useState({});
+
+  // Helper to get or generate a product description (async)
+  async function getProductDescription(prod, info) {
+    if (info && info.description) return info.description;
+    if (prod && prod.description) return prod.description;
+    if (typeof window !== 'undefined' && typeof (window).generateProductDescriptionAI === 'function') {
+      return await (window).generateProductDescriptionAI({
+        name: prod.label,
+        contains: prod.contains,
+        nutrientPercents: prod.nutrientPercents,
+        nutrientBreakdown: prod.nutrientBreakdown
+      });
+    }
+    return "A high-quality product designed to support plant health and growth.";
+  }
+
+  // Precompute all product descriptions for all selected products
+  React.useEffect(() => {
+    let mounted = true;
+    async function fetchAllDescriptions() {
+      const all = {};
+      const allSelected = [
+        ...(seedTreatmentProducts || []),
+        ...(plantingBlendProducts || []),
+        ...(soilDrenchProducts || []),
+        ...(preFloweringFoliarProducts || []),
+        ...(preFloweringFoliarProducts2 || []),
+        ...(nutritionalFoliarProducts || []),
+        ...(nutritionalFoliarProducts2 || [])
+      ];
+      for (const selected of allSelected) {
+        let prod = seedTreatmentDefs.find(p => p.label === selected.product)
+          || soilDrenchDefs.find(p => p.label === selected.product)
+          || foliarSprayDefs.find(p => p.label === selected.product);
+        const info = (typeof PRODUCT_INFO !== 'undefined' && prod && PRODUCT_INFO[prod.label]) ? PRODUCT_INFO[prod.label] : {};
+        all[selected.id] = await getProductDescription(prod, info);
+      }
+      if (mounted) setProductDescriptions(all);
+    }
+    fetchAllDescriptions();
+    return () => { mounted = false; };
+  }, [seedTreatmentProducts, plantingBlendProducts, soilDrenchProducts, preFloweringFoliarProducts, preFloweringFoliarProducts2, nutritionalFoliarProducts, nutritionalFoliarProducts2]);
+
+  // In each product section, render using productDescriptions[selected.id]
+  // Example for Seed Treatment:
+  {seedTreatmentProducts.map((selected, idx) => {
+    const prod = productList.find(p => p.label === selected.product);
+    const desc = prod?.description || "A high-quality product designed to support plant health and growth.";
+    return (
+      <li key={selected.id} className="mb-1">
+        <a href={prod ? `https://www.nutri-tech.com.au/products/${prod.value}` : '#'} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-700 hover:underline">
+          {selected.product}
+        </a>
+        {desc && <span className="text-gray-700 ml-1"> {desc}</span>}
+        {prod && prod.contains && prod.contains.length > 0 && <span className="text-gray-500 ml-1"> (Contains: {prod.contains.join(', ')})</span>}
+        {prod && prod.nutrientPercents && prod.nutrientPercents.length > 0 && <span className="text-gray-400 ml-1"> [{prod.nutrientPercents.join(', ')}]</span>}
+        <span className="font-semibold ml-2">{selected.rate} {selected.unit}</span>
+      </li>
+    );
+  })}
+  // Repeat for other product sections.
+
   return (
     <div className="w-full max-w-screen-2xl mx-auto">
       {/* TEMP: Render SoilAnalysisChart at the top for testing */}
@@ -3249,185 +3348,178 @@ baseSaturationNames.forEach(element => {
               <ReportSection title="4. Product Recommendation Summary" collapsible expanded={showSection4} onToggle={() => setShowSection4(v => !v)} useHideButton={true} infoContent={"A summary of all recommended products, their purposes, and application rates. Use this as a quick reference for your full nutrient program."}>
                 {showSection4 && (
                   <Card className="bg-white">
-                    <CardHeader><CardTitle className="text-black">Product Recommendation Summary</CardTitle></CardHeader>
+                    <CardHeader>
+                      <CardTitle className="text-black">Product Recommendation Summary</CardTitle>
+                    </CardHeader>
                     <CardContent>
-                      {(() => {
-                        // Collect all unique fertilizers across all sections
-                        const allFerts = new Set();
-                        const addFerts = (arr, key) => arr && arr.forEach(item => {
-                          if (item[key]) allFerts.add(item[key]);
-                        });
-                        addFerts(soilAmendmentsSummary, 'fertilizer');
-                        addFerts(seedTreatmentProducts, 'product');
-                        addFerts(plantingBlendProducts, 'product');
-                        addFerts(soilDrenchProducts, 'product');
-                        addFerts(preFloweringFoliarProducts, 'product');
-                        addFerts(preFloweringFoliarProducts2, 'product');
-                        addFerts(nutritionalFoliarProducts, 'product');
-                        addFerts(nutritionalFoliarProducts2, 'product');
-                        // Helper to render a fertilizer as a blue hyperlink with description
-                        const renderFert = (name, idx, item) => {
-                          const url = `https://nutri-tech.com.au/products?search=${encodeURIComponent(name)}`;
-                          const desc = fertilizerDescriptions[name] || 'A high-quality product designed to support plant health and growth.';
-                          // Try to get 'contains' from item, or from product definitions
-                          let contains = item && item.contains;
-                          if (!contains) {
-                            let def = seedTreatmentDefs && seedTreatmentDefs.find(p => p.label === name);
-                            if (!def) def = soilDrenchDefs && soilDrenchDefs.find(p => p.label === name);
-                            if (!def) def = foliarSprayDefs && foliarSprayDefs.find(p => p.label === name);
-                            if (def) {
-                              if ('contains' in def && Array.isArray(def.contains)) {
-                                contains = def.contains;
-                              } else if ('nutrientContent' in def && def.nutrientContent && typeof def.nutrientContent === 'object') {
-                                contains = Object.keys(def.nutrientContent).filter(k => def.nutrientContent[k] > 0);
-                              }
-                            }
-                          }
-                          return (
-                            <span key={name + '-' + idx}>
-                              <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'underline', fontWeight: 500 }}>{name}</a>
-                              <span className="text-gray-600 text-xs ml-2">{desc}</span>
-                              {contains && contains.length > 0 && (
-                                <span className="text-gray-600 text-xs ml-2">(Contains: {contains.join(', ')})</span>
-                              )}
-                            </span>
-                          );
-                        };
-                        // Helper to filter unique fertilizers for a section
-                        const uniqueFerts = (arr, key) => {
-                          const seen = new Set();
-                          return (arr || []).filter(item => {
-                            const fert = item[key];
-                            if (!fert || seen.has(fert) || !allFerts.has(fert)) return false;
-                            seen.add(fert);
-                            return true;
-                          });
-                        };
-                        return (
-                          <ul className="list-disc ml-6 text-base space-y-2">
-                            {/* Soil Amendments */}
-                            {soilAmendmentsSummary && soilAmendmentsSummary.length > 0 && (
-                              <li className="mb-2">
-                                <span className="font-semibold">Soil Amendments:</span>
-                                <span className="text-gray-500 text-xs ml-2">Products to correct soil nutrient deficiencies and improve soil structure.</span>
-                                <ul className="list-disc ml-6">
-                                  {uniqueFerts(soilAmendmentsSummary, 'fertilizer').map((item, idx) => (
-                                    <li key={item.fertilizer + '-' + idx} className="mb-1">
-                                      {renderFert(item.fertilizer, idx, item)}
-                                      <span className="text-gray-700 ml-1">{item.rate} {item.unit}</span>
-                                      {item.contains && item.contains.length > 0 && (
-                                        <span className="text-gray-600 ml-2">(Contains: {item.contains.join(', ')})</span>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </li>
-                            )}
-                            {/* Seed Treatment */}
-                            {seedTreatmentProducts && seedTreatmentProducts.length > 0 && (
-                              <li className="mb-2">
-                                <span className="font-semibold">Seed Treatment:</span>
-                                <span className="text-gray-500 text-xs ml-2">Products applied to seeds before planting to enhance germination and early growth.</span>
-                                <ul className="list-disc ml-6">
-                                  {uniqueFerts(seedTreatmentProducts, 'product').map((product, idx) => (
-                                    <li key={product.product + '-' + idx} className="mb-1">
-                                      {renderFert(product.product, idx, product)}
-                                      <span className="text-gray-700 ml-1">{product.rate} {product.unit}</span>
-                                      {product.contains && product.contains.length > 0 && (
-                                        <span className="text-gray-600 ml-2">(Contains: {product.contains.join(', ')})</span>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </li>
-                            )}
-                            {/* Planting Blend */}
-                            {plantingBlendProducts && plantingBlendProducts.length > 0 && (
-                              <li className="mb-2">
-                                <span className="font-semibold">Planting Blend:</span>
-                                <span className="text-gray-500 text-xs ml-2">Custom blends applied at planting to provide balanced nutrition for seedlings.</span>
-                                <ul className="list-disc ml-6">
-                                  {uniqueFerts(plantingBlendProducts, 'product').map((product, idx) => (
-                                    <li key={product.product + '-' + idx} className="mb-1">
-                                      {renderFert(product.product, idx, product)}
-                                      <span className="text-gray-700 ml-1">{product.rate} {product.unit}</span>
-                                      {product.contains && product.contains.length > 0 && (
-                                        <span className="text-gray-600 ml-2">(Contains: {product.contains.join(', ')})</span>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </li>
-                            )}
-                            {/* Biological Fertigation Program */}
-                            {soilDrenchProducts && soilDrenchProducts.length > 0 && (
-                              <li className="mb-2">
-                                <span className="font-semibold">Biological Fertigation Program:</span>
-                                <span className="text-gray-500 text-xs ml-2">Biological products delivered through irrigation to enhance soil health and nutrient cycling.</span>
-                                <ul className="list-disc ml-6">
-                                  {uniqueFerts(soilDrenchProducts, 'product').map((product, idx) => (
-                                    <li key={product.product + '-' + idx} className="mb-1">
-                                      {renderFert(product.product, idx, product)}
-                                      <span className="text-gray-700 ml-1">{product.rate} {product.unit}</span>
-                                      {product.contains && product.contains.length > 0 && (
-                                        <span className="text-gray-600 ml-2">(Contains: {product.contains.join(', ')})</span>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </li>
-                            )}
-                            {/* Pre-Flowering Foliar Spray */}
-                            {([
-                              ...preFloweringFoliarProducts,
-                              ...preFloweringFoliarProducts2
-                            ].length > 0) && (
-                              <li className="mb-2">
-                                <span className="font-semibold">Pre-Flowering Foliar Spray:</span>
-                                <span className="text-gray-500 text-xs ml-2">Nutrient solutions sprayed before flowering for rapid absorption and early plant support.</span>
-                                <ul className="list-disc ml-6">
-                                  {uniqueFerts([
-                                    ...preFloweringFoliarProducts,
-                                    ...preFloweringFoliarProducts2
-                                  ], 'product').map((product, idx) => (
-                                    <li key={product.product + '-' + idx} className="mb-1">
-                                      {renderFert(product.product, idx, product)}
-                                      <span className="text-gray-700 ml-1">{product.rate} {product.unit}</span>
-                                      {product.contains && product.contains.length > 0 && (
-                                        <span className="text-gray-600 ml-2">(Contains: {product.contains.join(', ')})</span>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </li>
-                            )}
-                            {/* Nutritional Foliar Spray */}
-                            {([
-                              ...nutritionalFoliarProducts,
-                              ...nutritionalFoliarProducts2
-                            ].length > 0) && (
-                              <li className="mb-2">
-                                <span className="font-semibold">Nutritional Foliar Spray:</span>
-                                <span className="text-gray-500 text-xs ml-2">Nutrient solutions sprayed for ongoing nutritional support and rapid correction of deficiencies.</span>
-                                <ul className="list-disc ml-6">
-                                  {uniqueFerts([
-                                    ...nutritionalFoliarProducts,
-                                    ...nutritionalFoliarProducts2
-                                  ], 'product').map((product, idx) => (
-                                    <li key={product.product + '-' + idx} className="mb-1">
-                                      {renderFert(product.product, idx, product)}
-                                      <span className="text-gray-700 ml-1">{product.rate} {product.unit}</span>
-                                      {product.contains && product.contains.length > 0 && (
-                                        <span className="text-gray-600 ml-2">(Contains: {product.contains.join(', ')})</span>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </li>
-                            )}
-                          </ul>
-                        );
-                      })()}
+                      <ul className="list-disc ml-6 text-base">
+                        {/* Seed Treatment */}
+                        {seedTreatmentProducts && seedTreatmentProducts.length > 0 && (
+                          <li className="mb-2">
+                            <span className="font-semibold">Seed Treatment:</span>
+                            <span className="text-gray-600 ml-2">Products applied to seeds before planting to enhance germination and early growth.</span>
+                            <ul className="ml-6 mt-1">
+                              {seedTreatmentProducts.map((selected, idx) => {
+                                const prod = productList.find(p => p.label === selected.product);
+                                const desc = prod?.description || "A high-quality product designed to support plant health and growth.";
+                                return (
+                                  <li key={selected.id} className="mb-1">
+                                    <a href={prod ? `https://www.nutri-tech.com.au/products/${prod.value}` : '#'} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-700 hover:underline">
+                                      {selected.product}
+                                    </a>
+                                    {desc && <span className="text-gray-700 ml-1"> {desc}</span>}
+                                    {prod && prod.contains && prod.contains.length > 0 && <span className="text-gray-500 ml-1"> (Contains: {prod.contains.join(', ')})</span>}
+                                    {prod && prod.nutrientPercents && prod.nutrientPercents.length > 0 && <span className="text-gray-400 ml-1"> [{prod.nutrientPercents.join(', ')}]</span>}
+                                    <span className="font-semibold ml-2">{selected.rate} {selected.unit}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </li>
+                        )}
+                        {/* Planting Blend */}
+                        {plantingBlendProducts && plantingBlendProducts.length > 0 && (
+                          <li className="mb-2">
+                            <span className="font-semibold">Planting Blend:</span>
+                            <span className="text-gray-600 ml-2">Custom blends applied at planting to provide balanced nutrition for seedlings.</span>
+                            <ul className="ml-6 mt-1">
+                              {plantingBlendProducts.map((selected, idx) => {
+                                const prod = productList.find(p => p.label === selected.product);
+                                const desc = prod?.description || "A high-quality product designed to support plant health and growth.";
+                                return (
+                                  <li key={selected.id} className="mb-1">
+                                    <a href={prod ? `https://www.nutri-tech.com.au/products/${prod.value}` : '#'} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-700 hover:underline">
+                                      {selected.product}
+                                    </a>
+                                    {desc && <span className="text-gray-700 ml-1"> {desc}</span>}
+                                    {prod && prod.contains && prod.contains.length > 0 && <span className="text-gray-500 ml-1"> (Contains: {prod.contains.join(', ')})</span>}
+                                    {prod && prod.nutrientPercents && prod.nutrientPercents.length > 0 && <span className="text-gray-400 ml-1"> [{prod.nutrientPercents.join(', ')}]</span>}
+                                    <span className="font-semibold ml-2">{selected.rate} {selected.unit}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </li>
+                        )}
+                        {/* Biological Fertigation Program (Soil Drench) */}
+                        {soilDrenchProducts && soilDrenchProducts.length > 0 && (
+                          <li className="mb-2">
+                            <span className="font-semibold">Biological Fertigation Program:</span>
+                            <span className="text-gray-600 ml-2">Biological products delivered through irrigation to enhance soil health and nutrient cycling.</span>
+                            <ul className="ml-6 mt-1">
+                              {soilDrenchProducts.map((selected, idx) => {
+                                const prod = productList.find(p => p.label === selected.product);
+                                const desc = prod?.description || "A high-quality product designed to support plant health and growth.";
+                                return (
+                                  <li key={selected.id} className="mb-1">
+                                    <a href={prod ? `https://www.nutri-tech.com.au/products/${prod.value}` : '#'} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-700 hover:underline">
+                                      {selected.product}
+                                    </a>
+                                    {desc && <span className="text-gray-700 ml-1"> {desc}</span>}
+                                    {prod && prod.contains && prod.contains.length > 0 && <span className="text-gray-500 ml-1"> (Contains: {prod.contains.join(', ')})</span>}
+                                    {prod && prod.nutrientPercents && prod.nutrientPercents.length > 0 && <span className="text-gray-400 ml-1"> [{prod.nutrientPercents.join(', ')}]</span>}
+                                    <span className="font-semibold ml-2">{selected.rate} {selected.unit}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </li>
+                        )}
+                        {/* Pre-Flowering Foliar Spray (both sections) */}
+                        {preFloweringFoliarProducts && preFloweringFoliarProducts.length > 0 && (
+                          <li className="mb-2">
+                            <span className="font-semibold">Pre-Flowering Foliar Spray:</span>
+                            <span className="text-gray-600 ml-2">Nutrient solutions sprayed before flowering for rapid absorption and early plant support.</span>
+                            <ul className="ml-6 mt-1">
+                              {preFloweringFoliarProducts.map((selected, idx) => {
+                                const prod = productList.find(p => p.label === selected.product);
+                                const desc = prod?.description || "A high-quality product designed to support plant health and growth.";
+                                return (
+                                  <li key={selected.id} className="mb-1">
+                                    <a href={prod ? `https://www.nutri-tech.com.au/products/${prod.value}` : '#'} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-700 hover:underline">
+                                      {selected.product}
+                                    </a>
+                                    {desc && <span className="text-gray-700 ml-1"> {desc}</span>}
+                                    {prod && prod.contains && prod.contains.length > 0 && <span className="text-gray-500 ml-1"> (Contains: {prod.contains.join(', ')})</span>}
+                                    {prod && prod.nutrientPercents && prod.nutrientPercents.length > 0 && <span className="text-gray-400 ml-1"> [{prod.nutrientPercents.join(', ')}]</span>}
+                                    <span className="font-semibold ml-2">{selected.rate} {selected.unit}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </li>
+                        )}
+                        {preFloweringFoliarProducts2 && preFloweringFoliarProducts2.length > 0 && (
+                          <li className="mb-2">
+                            <span className="font-semibold">Pre-Flowering Foliar Spray (2):</span>
+                            <span className="text-gray-600 ml-2">Nutrient solutions sprayed before flowering for rapid absorption and early plant support.</span>
+                            <ul className="ml-6 mt-1">
+                              {preFloweringFoliarProducts2.map((selected, idx) => {
+                                const prod = productList.find(p => p.label === selected.product);
+                                const desc = prod?.description || "A high-quality product designed to support plant health and growth.";
+                                return (
+                                  <li key={selected.id} className="mb-1">
+                                    <a href={prod ? `https://www.nutri-tech.com.au/products/${prod.value}` : '#'} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-700 hover:underline">
+                                      {selected.product}
+                                    </a>
+                                    {desc && <span className="text-gray-700 ml-1"> {desc}</span>}
+                                    {prod && prod.contains && prod.contains.length > 0 && <span className="text-gray-500 ml-1"> (Contains: {prod.contains.join(', ')})</span>}
+                                    {prod && prod.nutrientPercents && prod.nutrientPercents.length > 0 && <span className="text-gray-400 ml-1"> [{prod.nutrientPercents.join(', ')}]</span>}
+                                    <span className="font-semibold ml-2">{selected.rate} {selected.unit}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </li>
+                        )}
+                        {/* Nutritional Foliar Spray (both sections) */}
+                        {nutritionalFoliarProducts && nutritionalFoliarProducts.length > 0 && (
+                          <li className="mb-2">
+                            <span className="font-semibold">Nutritional Foliar Spray:</span>
+                            <span className="text-gray-600 ml-2">Nutrient solutions sprayed for ongoing nutritional support and rapid correction of deficiencies.</span>
+                            <ul className="ml-6 mt-1">
+                              {nutritionalFoliarProducts.map((selected, idx) => {
+                                const prod = productList.find(p => p.label === selected.product);
+                                const desc = prod?.description || "A high-quality product designed to support plant health and growth.";
+                                return (
+                                  <li key={selected.id} className="mb-1">
+                                    <a href={prod ? `https://www.nutri-tech.com.au/products/${prod.value}` : '#'} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-700 hover:underline">
+                                      {selected.product}
+                                    </a>
+                                    {desc && <span className="text-gray-700 ml-1"> {desc}</span>}
+                                    {prod && prod.contains && prod.contains.length > 0 && <span className="text-gray-500 ml-1"> (Contains: {prod.contains.join(', ')})</span>}
+                                    {prod && prod.nutrientPercents && prod.nutrientPercents.length > 0 && <span className="text-gray-400 ml-1"> [{prod.nutrientPercents.join(', ')}]</span>}
+                                    <span className="font-semibold ml-2">{selected.rate} {selected.unit}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </li>
+                        )}
+                        {nutritionalFoliarProducts2 && nutritionalFoliarProducts2.length > 0 && (
+                          <li className="mb-2">
+                            <span className="font-semibold">Nutritional Foliar Spray (2):</span>
+                            <span className="text-gray-600 ml-2">Nutrient solutions sprayed for ongoing nutritional support and rapid correction of deficiencies.</span>
+                            <ul className="ml-6 mt-1">
+                              {nutritionalFoliarProducts2.map((selected, idx) => {
+                                const prod = productList.find(p => p.label === selected.product);
+                                const desc = prod?.description || "A high-quality product designed to support plant health and growth.";
+                                return (
+                                  <li key={selected.id} className="mb-1">
+                                    <a href={prod ? `https://www.nutri-tech.com.au/products/${prod.value}` : '#'} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-700 hover:underline">
+                                      {selected.product}
+                                    </a>
+                                    {desc && <span className="text-gray-700 ml-1"> {desc}</span>}
+                                    {prod && prod.contains && prod.contains.length > 0 && <span className="text-gray-500 ml-1"> (Contains: {prod.contains.join(', ')})</span>}
+                                    {prod && prod.nutrientPercents && prod.nutrientPercents.length > 0 && <span className="text-gray-400 ml-1"> [{prod.nutrientPercents.join(', ')}]</span>}
+                                    <span className="font-semibold ml-2">{selected.rate} {selected.unit}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </li>
+                        )}
+                      </ul>
                     </CardContent>
                   </Card>
                 )}
