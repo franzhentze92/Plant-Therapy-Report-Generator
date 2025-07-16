@@ -205,7 +205,7 @@ def extract_soil_report():
         tables = extract_tables_with_pdfplumber(file)
         app.logger.info(f'Extracted {len(tables)} tables from PDF')
         for idx, table in enumerate(tables):
-            app.logger.info(f'Table {idx + 1} content: {table}')
+            app.logger.info(f'Table {idx + 1} has {len(table)} rows')
         file.seek(0)
         
         # Store all found analyses
@@ -221,11 +221,24 @@ def extract_soil_report():
                 # Find header row and map columns
                 header_row = None
                 header_idx = 0
+                is_tae_table = False
                 for i, row in enumerate(table):
                     if any(cell and isinstance(cell, str)
                            and 'ELEMENT' in cell.upper() for cell in row):
                         header_row = row
                         header_idx = i
+                        app.logger.info(f'Element table detected! Row: {row}')
+                        break
+                    # Check if this is a TAE table
+                    for cell in row:
+                        if cell and isinstance(cell, str):
+                            if 'T.A.E.' in cell.upper() or 'T.A.E' in cell.upper():
+                                is_tae_table = True
+                                header_row = row
+                                header_idx = i
+                                app.logger.info(f'TAE table detected! Row: {row}')
+                                break
+                    if is_tae_table:
                         break
                         
                 if header_row:
@@ -286,8 +299,11 @@ def extract_soil_report():
                             'current': current,
                             'ideal': ideal,
                             'unit': '',
-                            'range': range_str
+                            'range': range_str,
+                            'category': 'tae' if is_tae_table else None
                         }
+                        if is_tae_table:
+                            app.logger.info(f'TAE nutrient created: {nutrient_row}')
                         # Try to extract unit from current value
                         if row[header_map['current']
                                ] and '%' in row[header_map['current']]:
@@ -359,11 +375,23 @@ def extract_soil_report():
                             continue
                         # Only add if we have a valid name and some data
                         if name and (current > 0 or ideal is not None):
+                            # Check if this table contains TAE data by looking at the table content
+                            is_tae_table = False
+                            for table_row in table:
+                                for cell in table_row:
+                                    if cell and isinstance(cell, str):
+                                        if 'T.A.E.' in cell.upper() or 'T.A.E' in cell.upper():
+                                            is_tae_table = True
+                                            app.logger.info(f'TAE table detected in fallback! Row: {table_row}')
+                                            break
+                                if is_tae_table:
+                                    break
                             nutrient_row = {
                                 'name': name,
                                 'current': current,
                                 'ideal': ideal,
-                                'unit': unit
+                                'unit': unit,
+                                'category': 'tae' if is_tae_table else None
                             }
                             app.logger.info(
                                 f'Fallback parsed nutrient row: {nutrient_row}')

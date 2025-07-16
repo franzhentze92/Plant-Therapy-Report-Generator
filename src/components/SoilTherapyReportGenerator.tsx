@@ -126,7 +126,11 @@ const allowedNutrients = [
   'Organic Matter (Calc)', 'pH-level (1:5 water)', 'CEC',
   'Nitrate', 'Ammonium', 'Phosphorus', 'Potassium', 'Calcium', 'Magnesium', 'Sodium', 'Sulphur',
   'Iron', 'Copper', 'Manganese', 'Boron', 'Zinc', 'Cobalt', 'Molybdenum', 'Silica', 'Aluminium', 'Aluminum',
-  'Ca/Mg Ratio'
+  'Ca/Mg Ratio',
+  // TAE nutrients
+  'Sodium TAE', 'Potassium TAE', 'Calcium TAE', 'Magnesium TAE', 'Phosphorus TAE', 'Aluminium TAE',
+  'Copper TAE', 'Iron TAE', 'Manganese TAE', 'Selenium TAE', 'Zinc TAE', 'Boron TAE', 'Silicon TAE',
+  'Cobalt TAE', 'Molybdenum TAE', 'Sulfur TAE'
 ];
 
 const nutrientNameMap = {
@@ -1272,8 +1276,16 @@ const SoilReportGenerator: React.FC = () => {
       }
       
       // Always use single analysis logic for now
-      if (result.analyses && Array.isArray(result.analyses) && result.analyses[0]?.nutrients) {
-        setNutrients(result.analyses[0].nutrients);
+      if (result.analyses && Array.isArray(result.analyses) && result.analyses.length > 0) {
+        // Combine all analyses to get all nutrients including TAE
+        const allNutrients = [];
+        result.analyses.forEach((analysis, index) => {
+          if (analysis.nutrients && Array.isArray(analysis.nutrients)) {
+            console.log(`Analysis ${index} nutrients:`, analysis.nutrients);
+            allNutrients.push(...analysis.nutrients);
+          }
+        });
+        setNutrients(allNutrients);
       } else if (Array.isArray(result.nutrients)) {
         setNutrients(result.nutrients);
       } else {
@@ -1281,6 +1293,10 @@ const SoilReportGenerator: React.FC = () => {
       }
       // Optionally, set zone sensitivity if needed (skip for now)
       console.log('File upload complete, parsedNutrients:', result);
+      console.log('Backend response raw:', result);
+      console.log('TAE nutrients in response:', result.tae);
+      console.log('All nutrients from backend:', result.analyses?.[0]?.nutrients || []);
+      console.log('Nutrients with category tae:', (result.analyses?.[0]?.nutrients || []).filter(n => n.category === 'tae'));
     } catch (err) {
       console.error('Error parsing PDF:', err);
       alert('Failed to parse PDF. Please check your file or try a different one.');
@@ -2599,7 +2615,11 @@ const SoilReportGenerator: React.FC = () => {
       'Magnesium LaMotte': 'Magnesium_LaMotte',
       'Phosphorus LaMotte': 'Phosphorus_LaMotte',
       'Potassium LaMotte': 'Potassium_LaMotte',
-      // tae
+      // tae (simple names from backend - only add unique ones not already mapped)
+      'Selenium': 'Selenium_TAE',
+      'Cobalt': 'Cobalt_TAE',
+      'Molybdenum': 'Molybdenum_TAE',
+      // tae (with TAE suffix)
       'Sodium TAE': 'Sodium_TAE',
       'Potassium TAE': 'Potassium_TAE',
       'Calcium TAE': 'Calcium_TAE',
@@ -2621,6 +2641,18 @@ const SoilReportGenerator: React.FC = () => {
     const parsedLookup = {};
     parsedNutrients.forEach(n => {
       let canonical = nameMap[n.name] || n.name;
+      
+      // Special handling for TAE nutrients - use category field from backend
+      if (n.category === 'tae') {
+        // Map TAE nutrients to their canonical TAE names
+        const taeKey = n.name + '_TAE';
+        if (canonicalList.includes(taeKey)) {
+          parsedLookup[taeKey] = n;
+          console.log(`DEBUG: Mapped TAE nutrient "${n.name}" to "${taeKey}"`);
+          return;
+        }
+      }
+      
       if (canonicalList.includes(canonical)) {
         parsedLookup[canonical] = n;
       }
