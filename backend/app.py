@@ -344,6 +344,19 @@ def extract_soil_report():
                             return 0
                         current = parse_value(current_raw)
                         ideal = parse_range(ideal_raw)
+                        # PATCH: Always include base saturation nutrients with % unit, even if ideal is missing
+                        base_sat_names = ['Calcium', 'Magnesium', 'Potassium', 'Sodium', 'Aluminum', 'Hydrogen', 'Other Bases']
+                        if name in base_sat_names and unit == '%':
+                            nutrient_row = {
+                                'name': name,
+                                'current': current,
+                                'ideal': ideal if ideal is not None else None,
+                                'unit': unit
+                            }
+                            app.logger.info(
+                                f'Base saturation PATCH: {nutrient_row}')
+                            nutrients.append(nutrient_row)
+                            continue
                         # Only add if we have a valid name and some data
                         if name and (current > 0 or ideal is not None):
                             nutrient_row = {

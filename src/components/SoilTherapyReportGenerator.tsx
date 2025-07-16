@@ -696,12 +696,24 @@ const SoilReportGenerator: React.FC = () => {
     return { ...n, name: mainName, current, ideal, status };
   });
 
-  // Deduplicate unifiedNutrientRows by canonical name
+  // Deduplicate unifiedNutrientRows by canonical name, but for base saturation nutrients, always keep the '%' version if present
+  const baseSaturationNames = [
+    'Calcium', 'Magnesium', 'Potassium', 'Sodium', 'Aluminum', 'Hydrogen', 'Other Bases', 'Other_Bases'
+  ];
   const dedupedUnifiedNutrientRowsMap = new Map();
   unifiedNutrientRows.forEach(n => {
     const key = canonicalName(n.name);
-    if (!dedupedUnifiedNutrientRowsMap.has(key)) {
-      dedupedUnifiedNutrientRowsMap.set(key, n);
+    if (baseSaturationNames.includes(n.name)) {
+      // Always overwrite with the % version if found
+      if (n.unit === '%') {
+        dedupedUnifiedNutrientRowsMap.set(key, n);
+      } else if (!dedupedUnifiedNutrientRowsMap.has(key)) {
+        dedupedUnifiedNutrientRowsMap.set(key, n);
+      }
+    } else {
+      if (!dedupedUnifiedNutrientRowsMap.has(key)) {
+        dedupedUnifiedNutrientRowsMap.set(key, n);
+      }
     }
   });
   const dedupedUnifiedNutrientRows = Array.from(dedupedUnifiedNutrientRowsMap.values());
@@ -2384,6 +2396,17 @@ const SoilReportGenerator: React.FC = () => {
 
   // --- Comprehensive Nutrient Table Component ---
   const ComprehensiveNutrientTable = ({ nutrients }) => {
+    // List of base saturation nutrients
+    const baseSaturationNames = [
+      'Calcium', 'Magnesium', 'Potassium', 'Sodium', 'Aluminum', 'Hydrogen', 'Other Bases', 'Other_Bases'
+    ];
+    // Filter nutrients: for base saturation, only show the '%' unit row
+    const filteredNutrients = nutrients.filter((n) => {
+      if (baseSaturationNames.includes(n.name)) {
+        return n.unit === '%';
+      }
+      return true;
+    });
     function getBarData(n) {
       const name = n.name;
       const value = n.current;
@@ -2472,7 +2495,7 @@ const SoilReportGenerator: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {nutrients.filter(n => !(n.current === undefined && n.ideal === undefined && (!n.ideal_range || n.ideal_range.length === 0))).map((n, idx) => {
+              {filteredNutrients.filter(n => !(n.current === undefined && n.ideal === undefined && (!n.ideal_range || n.ideal_range.length === 0))).map((n, idx) => {
                 const { bar, color, status, low, high, value, unit, score } = getBarData(n);
                 return (
                   <tr key={n.name + '_' + (n.category || idx)}>
@@ -2600,12 +2623,23 @@ const SoilReportGenerator: React.FC = () => {
         parsedLookup[canonical] = n;
       }
     });
-    // PATCH: Map LaMotte/Reams values if present as 'Calcium', 'Magnesium', etc. with unit 'ppm'
+
+    // Always use % version for base saturation canonical keys if present
+const baseSaturationNames = ['Calcium', 'Magnesium', 'Potassium', 'Sodium', 'Aluminum', 'Hydrogen', 'Other_Bases'];
+baseSaturationNames.forEach(element => {
+  // Find % version in parsedNutrients
+  const percentRow = parsedNutrients.find(n => (n.name === element || n.name === element.replace('_', ' ')) && n.unit === '%');
+  if (percentRow && canonicalList.includes(element)) {
+    parsedLookup[element] = percentRow;
+  }
+});
+
+    // PATCH: Map LaMotte/Reams values if present as 'Calcium', 'Magnesium', 'Phosphorus', 'Potassium' with unit 'ppm'
     ['Calcium', 'Magnesium', 'Phosphorus', 'Potassium'].forEach(element => {
       const lamotteKey = element + '_LaMotte';
-      let parsed = parsedLookup[element];
-      // For Phosphorus, pick the one with ideal in LaMotte range (7–30) if multiple exist
+      let ppmRow;
       if (element === 'Phosphorus') {
+        // For Phosphorus, pick the one with ideal in LaMotte range (7–30) if multiple exist
         const candidates = parsedNutrients.filter(n =>
           n.name === 'Phosphorus' &&
           n.unit &&
@@ -2614,30 +2648,22 @@ const SoilReportGenerator: React.FC = () => {
           n.ideal >= 7 && n.ideal <= 30
         );
         if (candidates.length > 0) {
-          parsed = candidates[0];
+          ppmRow = candidates[0];
         }
+      } else {
+        ppmRow = parsedNutrients.find(n =>
+          (n.name === element || n.name === element.replace('_', ' ')) &&
+          n.unit &&
+          n.unit.toLowerCase() === 'ppm'
+        );
       }
-      let value = parsed && typeof parsed.current !== 'undefined' ? parsed.current : '';
-      // Treat '-', '', or values starting with '<' as 0
-      if (typeof value === 'string' && (value.trim() === '' || value.trim() === '-' || value.trim().startsWith('<'))) {
-        value = 0;
+      if (!parsedLookup[lamotteKey] && ppmRow) {
+        parsedLookup[lamotteKey] = { ...ppmRow, name: lamotteKey, current: ppmRow.current };
       }
-      // If missing, set to 0
-      if (!parsed && element === 'Phosphorus') {
+      // If missing, set to 0 for Phosphorus
+      if (!ppmRow && element === 'Phosphorus') {
         parsedLookup[lamotteKey] = { name: lamotteKey, current: 0, unit: 'ppm' };
         console.log('DEBUG: No Phosphorus found in parsed nutrients, setting Phosphorus_LaMotte to 0');
-        return;
-      }
-      if (
-        !parsedLookup[lamotteKey] &&
-        parsed &&
-        parsed.unit &&
-        parsed.unit.toLowerCase() === 'ppm'
-      ) {
-        if (element === 'Phosphorus') {
-          console.log('DEBUG: Mapping Phosphorus_LaMotte from', parsed);
-        }
-        parsedLookup[lamotteKey] = { ...parsed, name: lamotteKey, current: value };
       }
     });
     // Build unified array
