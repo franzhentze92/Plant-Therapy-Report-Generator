@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from './ui/select';
@@ -205,6 +205,34 @@ const SoilCorrections = ({ nutrients, soilAmendmentsSummary, setSoilAmendmentsSu
   const [releaseTypeFilter, setReleaseTypeFilter] = useState('all');
   // Add this at the top level of the component, after other useState hooks:
   const [dropdownReleaseTypes, setDropdownReleaseTypes] = useState({}); // { [`${nutrient.name}-${idx}`]: value }
+
+  // --- NEW: Sync soilAmendmentsSummary with fertSelections automatically ---
+  useEffect(() => {
+    // Flatten all selected fertilizers into a summary array
+    const summary = [];
+    Object.entries(fertSelections).forEach(([nutrient, sels]) => {
+      (Array.isArray(sels) ? sels : []).forEach(sel => {
+        if (sel.fertLabel && sel.fertLabel !== 'none' && typeof sel.rate === 'number' && sel.rate > 0) {
+          const fert = fertilizerDefs.find(f => f.label === sel.fertLabel);
+          if (fert) {
+            const percent = fert.nutrientContent[nutrient] || 0;
+            const actualNutrientApplied = (sel.rate * percent) / 100;
+            summary.push({
+              fertilizer: sel.fertLabel,
+              nutrient,
+              rate: sel.rate,
+              actualNutrientApplied,
+              unit: 'kg/ha',
+              contains: Object.keys(fert.nutrientContent),
+              recommended: true,
+              nutrientsFor: [nutrient],
+            });
+          }
+        }
+      });
+    });
+    setSoilAmendmentsSummary(summary);
+  }, [fertSelections, setSoilAmendmentsSummary]);
 
   // Helper: get total applied for a nutrient from summary
   function getTotalApplied(nutrient) {

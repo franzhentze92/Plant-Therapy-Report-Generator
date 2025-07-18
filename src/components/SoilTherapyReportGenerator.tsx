@@ -3385,6 +3385,30 @@ baseSaturationNames.forEach(element => {
                     </CardHeader>
                     <CardContent>
                       <ul className="list-disc ml-6 text-base">
+                        {/* Debug info */}
+                        {/* REMOVE the next two lines:
+                        <li className="text-red-500">DEBUG: soilAmendmentsSummary = {JSON.stringify(soilAmendmentsSummary)}</li>
+                        <li className="text-red-500">DEBUG: soilAmendmentsSummary length = {soilAmendmentsSummary ? soilAmendmentsSummary.length : 'undefined'}</li> */}
+                        {/* Soil Corrections FIRST */}
+                        {soilAmendmentsSummary && soilAmendmentsSummary.length > 0 && (
+                          <li className="mb-2">
+                            <span className="font-semibold">Soil Corrections:</span>
+                            <span className="text-gray-600 ml-2">Soil amendments and fertilizers applied to correct nutrient deficiencies and improve soil health.</span>
+                            <ul className="ml-6 mt-1">
+                              {soilAmendmentsSummary.map((item, idx) => {
+                                return (
+                                  <li key={idx} className="mb-1">
+                                    <span className="font-semibold text-blue-700">
+                                      {item.fertilizer}
+                                    </span>
+                                    {item.contains && item.contains.length > 0 && <span className="text-gray-500 ml-1"> (Contains: {item.contains.join(', ')})</span>}
+                                    <span className="font-semibold ml-2">{item.rate} {item.unit}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </li>
+                        )}
                         {/* Seed Treatment */}
                         {seedTreatmentProducts && seedTreatmentProducts.length > 0 && (
                           <li className="mb-2">
@@ -3551,6 +3575,8 @@ baseSaturationNames.forEach(element => {
                             </ul>
                           </li>
                         )}
+
+                        {/* Add more sections as needed */}
                       </ul>
                     </CardContent>
                   </Card>
