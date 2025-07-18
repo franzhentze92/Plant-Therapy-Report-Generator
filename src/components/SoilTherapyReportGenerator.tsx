@@ -2938,6 +2938,18 @@ baseSaturationNames.forEach(element => {
   })}
   // Repeat for other product sections.
 
+  // Add this near the top of the file, after imports:
+  const soilAmendmentDescriptions: Record<string, string> = {
+    'Monoammonium Phosphate (MAP)': 'A fast-acting phosphorus and ammonium fertilizer for rapid correction of P and N deficiencies.',
+    'Calcium Nitrate': 'Supplies fast-acting nitrate nitrogen and calcium. Used in fertigation and hydroponics.',
+    'Elemental Sulfur': 'Provides elemental sulfur for acidifying soil and correcting sulfur deficiencies.',
+    'Triple Superphosphate': 'A concentrated phosphorus fertilizer with added calcium for strong root development.',
+    'Muriate of Potash (Potassium Chloride)': 'A highly soluble potassium fertilizer for rapid correction of K deficiency.',
+    'Thermophosphate': 'A slow-release phosphate fertilizer containing calcium, magnesium, and phosphorus.',
+    'Gypsum (Calcium Sulfate)': 'Improves soil structure and supplies calcium and sulfur without affecting pH.',
+    // Add more as needed
+  };
+
   return (
     <div className="w-full max-w-screen-2xl mx-auto">
       {/* TEMP: Render SoilAnalysisChart at the top for testing */}
@@ -3396,11 +3408,14 @@ baseSaturationNames.forEach(element => {
                             <span className="text-gray-600 ml-2">Soil amendments and fertilizers applied to correct nutrient deficiencies and improve soil health.</span>
                             <ul className="ml-6 mt-1">
                               {soilAmendmentsSummary.map((item, idx) => {
+                                const prod = productList.find(p => p.label === item.fertilizer);
+                                const desc = prod?.description || soilAmendmentDescriptions[item.fertilizer];
                                 return (
                                   <li key={idx} className="mb-1">
                                     <span className="font-semibold text-blue-700">
                                       {item.fertilizer}
                                     </span>
+                                    {desc && <span className="text-gray-700 ml-1"> {desc}</span>}
                                     {item.contains && item.contains.length > 0 && <span className="text-gray-500 ml-1"> (Contains: {item.contains.join(', ')})</span>}
                                     <span className="font-semibold ml-2">{item.rate} {item.unit}</span>
                                   </li>

@@ -18,131 +18,94 @@ interface FertilizerDef {
 
 // Fertilizer definitions (should match those in SoilReportGenerator)
 const fertilizerDefs: FertilizerDef[] = [
+  { label: 'Calcium Nitrate', nutrientContent: { Calcium: 19, Nitrate: 12 }, phLogic: { min_pH: null, max_pH: 7.5 }, releaseType: 'fast' },
+  { label: 'Potassium Nitrate', nutrientContent: { Potassium: 44, Nitrate: 13 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'fast' },
+  { label: 'Sodium Nitrate (Chile Nitrate)', nutrientContent: { Sodium: 26, Nitrate: 16 }, phLogic: { min_pH: null, max_pH: 8.0 }, releaseType: 'fast' },
+  { label: 'Ammonium Nitrate', nutrientContent: { Ammonium: 17, Nitrate: 17 }, phLogic: { min_pH: 5.5, max_pH: 7.5 }, releaseType: 'fast' },
+  { label: 'UAN Solution (Urea Ammonium Nitrate)', nutrientContent: { Urea: 18, Ammonium: 9, Nitrate: 9 }, phLogic: { min_pH: 5.5, max_pH: 7.5 }, releaseType: 'fast' },
+  { label: 'Calcium Ammonium Nitrate (CAN)', nutrientContent: { Calcium: 8, Ammonium: 10, Nitrate: 10 }, phLogic: { min_pH: 5.5, max_pH: 7.5 }, releaseType: 'fast' },
+  { label: 'Magnesium Nitrate', nutrientContent: { Magnesium: 10.5, Nitrate: 11 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'fast' },
+  { label: 'Zinc Nitrate', nutrientContent: { Zinc: 12, Nitrate: 8 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'fast' },
+  { label: 'Iron Nitrate', nutrientContent: { Iron: 6, Nitrate: 10 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'fast' },
+  { label: 'Copper Nitrate', nutrientContent: { Copper: 8, Nitrate: 12 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'fast' },
+  { label: 'Ammonium Sulfate', nutrientContent: { Ammonium: 21, Sulphur: 24 }, phLogic: { min_pH: 5.0, max_pH: 8.5 }, releaseType: 'fast' },
+  { label: 'Monoammonium Phosphate (MAP)', nutrientContent: { Phosphorus: 22, Ammonium: 11 }, phLogic: { min_pH: 6.5, max_pH: 8.5 }, releaseType: 'fast' },
+  { label: 'Diammonium Phosphate (DAP)', nutrientContent: { Phosphorus: 20, Ammonium: 18 }, phLogic: { min_pH: 5.0, max_pH: 6.8 }, releaseType: 'fast' },
+  { label: 'Ammonium Nitrate', nutrientContent: { Ammonium: 17, Nitrate: 17 }, phLogic: { min_pH: 5.5, max_pH: 7.5 }, releaseType: 'fast' },
+  { label: 'UAN Solution (Urea Ammonium Nitrate)', nutrientContent: { Urea: 18, Ammonium: 9, Nitrate: 9 }, phLogic: { min_pH: 5.5, max_pH: 7.5 }, releaseType: 'fast' },
+  { label: 'Calcium Ammonium Nitrate (CAN)', nutrientContent: { Calcium: 8, Ammonium: 10, Nitrate: 10 }, phLogic: { min_pH: 5.5, max_pH: 7.5 }, releaseType: 'fast' },
+  { label: 'Ammonium Thiosulfate', nutrientContent: { Sulphur: 26, Ammonium: 12 }, phLogic: { min_pH: 5.0, max_pH: 8.5 }, releaseType: 'moderate' },
+  { label: 'Ammonium Polyphosphate (APP)', nutrientContent: { Phosphorus: 10, Ammonium: 11 }, phLogic: { min_pH: 5.5, max_pH: 8.0 }, releaseType: 'fast' },
+  { label: 'Ammonium Chloride', nutrientContent: { Ammonium: 25 }, phLogic: { min_pH: 5.0, max_pH: 7.0 }, releaseType: 'fast' },
+  { label: 'Ammonium Acetate', nutrientContent: { Ammonium: 12 }, phLogic: { min_pH: 5.0, max_pH: 8.5 }, releaseType: 'fast' },
+  { label: 'Triple Superphosphate (TSP)', nutrientContent: { Phosphorus: 45, Calcium: 19 }, phLogic: { min_pH: 5.5, max_pH: 7.5 }, releaseType: 'fast' },
+  { label: 'Monoammonium Phosphate (MAP)', nutrientContent: { Phosphorus: 22, Ammonium: 11 }, phLogic: { min_pH: 6.5, max_pH: 8.5 }, releaseType: 'fast' },
+  { label: 'Diammonium Phosphate (DAP)', nutrientContent: { Phosphorus: 20, Ammonium: 18 }, phLogic: { min_pH: 5.0, max_pH: 6.8 }, releaseType: 'fast' },
+  { label: 'Rock Phosphate', nutrientContent: { Phosphorus: 25, Calcium: 30 }, phLogic: { min_pH: null, max_pH: 6.0 }, releaseType: 'very slow' },
+  { label: 'Soft Rock Phosphate', nutrientContent: { Phosphorus: 8, Calcium: 19 }, phLogic: { min_pH: null, max_pH: 6.5 }, releaseType: 'slow' },
+  { label: 'Thermophosphate', nutrientContent: { Calcium: 20, Magnesium: 2, Phosphorus: 18 }, phLogic: { min_pH: 5.5, max_pH: 7.5 }, releaseType: 'slow' },
+  { label: 'Bone Meal', nutrientContent: { Calcium: 26, Phosphorus: 14 }, phLogic: { min_pH: null, max_pH: 7.0 }, releaseType: 'slow' },
+  { label: 'Fish Bone Meal', nutrientContent: { Calcium: 20, Phosphorus: 10, Nitrogen: 5 }, phLogic: { min_pH: 5.0, max_pH: 7.5 }, releaseType: 'slow' },
+  { label: 'Chicken Manure', nutrientContent: { Phosphorus: 2.5, Nitrogen: 3, Potassium: 2 }, phLogic: { min_pH: 5.0, max_pH: 8.0 }, releaseType: 'slow' },
+  { label: 'Ammonium Polyphosphate (APP)', nutrientContent: { Phosphorus: 10, Ammonium: 11 }, phLogic: { min_pH: 5.5, max_pH: 8.0 }, releaseType: 'fast' },
   { label: 'Agricultural Limestone (CaCO₃)', nutrientContent: { Calcium: 38 }, phLogic: { min_pH: null, max_pH: 6.5 }, releaseType: 'slow' },
+  { label: 'Dolomitic Lime', nutrientContent: { Calcium: 21, Magnesium: 11 }, phLogic: { min_pH: null, max_pH: 6.5 }, releaseType: 'slow' },
   { label: 'Gypsum (Calcium Sulfate)', nutrientContent: { Calcium: 23, Sulphur: 18 }, phLogic: { min_pH: 5.8, max_pH: 7.5 }, releaseType: 'moderate' },
   { label: 'Calcium Nitrate', nutrientContent: { Calcium: 19, Nitrate: 12 }, phLogic: { min_pH: null, max_pH: 7.5 }, releaseType: 'fast' },
-  { label: 'Dolomitic Lime', nutrientContent: { Calcium: 21, Magnesium: 11 }, phLogic: { min_pH: null, max_pH: 6.5 }, releaseType: 'slow' },
-  { label: 'Kieserite (Magnesium Sulfate Monohydrate)', nutrientContent: { Magnesium: 16, Sulphur: 22 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Epsom Salt (Magnesium Sulfate Heptahydrate)', nutrientContent: { Magnesium: 10, Sulphur: 13 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Muriate of Potash (Potassium Chloride)', nutrientContent: { Potassium: 60 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Sulfate of Potash (Potassium Sulfate)', nutrientContent: { Potassium: 50, Sulphur: 17 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Potassium Nitrate', nutrientContent: { Potassium: 44, Nitrate: 13 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Triple Superphosphate', nutrientContent: { Phosphorus: 45, Calcium: 19 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'fast' },
-  { label: 'Monoammonium Phosphate (MAP)', nutrientContent: { Phosphorus: 22, Ammonium: 11 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'fast' },
-  { label: 'Diammonium Phosphate (DAP)', nutrientContent: { Phosphorus: 20, Ammonium: 18 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'fast' },
-  { label: 'Rock Phosphate', nutrientContent: { Phosphorus: 25, Calcium: 30 }, phLogic: { min_pH: null, max_pH: 6.0 }, releaseType: 'very slow' },
-  { label: 'Calcium Phosphate', nutrientContent: { Calcium: 19, Phosphorus: 18 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'slow' },
+  { label: 'Soft Rock Phosphate', nutrientContent: { Phosphorus: 14, Calcium: 20 }, phLogic: { min_pH: null, max_pH: 6.5 }, releaseType: 'slow' },
   { label: 'Bone Meal', nutrientContent: { Calcium: 26, Phosphorus: 14 }, phLogic: { min_pH: null, max_pH: 7.0 }, releaseType: 'slow' },
-  { label: 'Fish Bone Meal', nutrientContent: { Calcium: 20, Phosphorus: 10, Nitrogen: 5 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'slow' },
-  { label: 'Guano', nutrientContent: { Phosphorus: 12, Nitrogen: 8 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'slow' },
-  { label: 'Thermophosphate', nutrientContent: { Calcium: 20, Magnesium: 2, Phosphorus: 18 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'slow' },
-  { label: 'Composted Poultry Manure', nutrientContent: { Calcium: 4, Magnesium: 2, Potassium: 2, Phosphorus: 3, Sulphur: 0, Nitrogen: 3 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'slow' },
-  { label: 'Chicken Manure', nutrientContent: { Phosphorus: 2.5, Nitrogen: 3, Potassium: 2 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'slow' },
-  { label: 'Polymer-Coated P Granules', nutrientContent: { Phosphorus: 40 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'controlled' },
-  { label: 'Elemental Sulfur', nutrientContent: { Sulphur: 90 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Ammonium Sulfate', nutrientContent: { Ammonium: 21, Sulphur: 24 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Zinc Sulfate (ZnSO₄)', nutrientContent: { Zinc: 23, Sulphur: 17.9 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Copper Sulfate (CuSO₄)', nutrientContent: { Copper: 25, Sulphur: 12.8 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Manganese Sulfate (MnSO₄)', nutrientContent: { Manganese: 31, Sulphur: 18 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Iron Sulfate (FeSO₄)', nutrientContent: { Iron: 19.7, Sulphur: 11.4 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Borax', nutrientContent: { Boron: 11.3 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Soluble Boron', nutrientContent: { Boron: 20 }, phLogic: { min_pH: null, max_pH: null } },
-  { label: 'Sodium Molybdate', nutrientContent: { Molybdenum: 39 }, phLogic: { min_pH: null, max_pH: null } },
+  { label: 'Fish Bone Meal', nutrientContent: { Calcium: 20, Phosphorus: 10, Nitrogen: 5 }, phLogic: { min_pH: 5.0, max_pH: 7.5 }, releaseType: 'slow' },
+  { label: 'Thermophosphate', nutrientContent: { Calcium: 20, Magnesium: 2, Phosphorus: 18 }, phLogic: { min_pH: 5.5, max_pH: 7.5 }, releaseType: 'slow' },
+  { label: 'Chicken Manure', nutrientContent: { Phosphorus: 2.5, Nitrogen: 3, Potassium: 2, Calcium: 3 }, phLogic: { min_pH: 5.0, max_pH: 8.0 }, releaseType: 'slow' },
   { label: 'Calcium Chloride', nutrientContent: { Calcium: 27 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'fast' },
-  { label: 'Calcined Clay', nutrientContent: { Calcium: 8 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'slow' },
-  { label: 'Wollastonite', nutrientContent: { Calcium: 17 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'very slow' },
-  { label: 'Ammonium Thiosulfate', nutrientContent: { Sulphur: 26, Nitrogen: 12 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'moderate' },
-  { label: 'Sulphur-Coated Urea', nutrientContent: { Sulphur: 15, Nitrogen: 35 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'slow' },
-  { label: 'Langbeinite', nutrientContent: { Sulphur: 22, Magnesium: 11, Potassium: 22 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'moderate' },
-  { label: 'Potassium Magnesium Sulphate', nutrientContent: { Sulphur: 22, Magnesium: 11, Potassium: 22 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'moderate' },
-  { label: 'Sulfur-Rich Compost', nutrientContent: { Sulphur: 2, Calcium: 3, Magnesium: 2, Potassium: 2, Phosphorus: 1, Nitrogen: 2 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'slow' },
+  { label: 'Muriate of Potash (Potassium Chloride)', nutrientContent: { Potassium: 60 }, phLogic: { min_pH: 5.5, max_pH: 8.5 }, releaseType: 'fast' },
+  { label: 'Potassium Nitrate', nutrientContent: { Potassium: 44, Nitrate: 13 }, phLogic: { min_pH: 5.0, max_pH: 8.0 }, releaseType: 'fast' },
+  { label: 'Langbeinite', nutrientContent: { Potassium: 22, Magnesium: 11, Sulphur: 22 }, phLogic: { min_pH: 5.5, max_pH: 8.0 }, releaseType: 'moderate' },
+  { label: 'Potassium Magnesium Sulfate', nutrientContent: { Potassium: 22, Magnesium: 11, Sulphur: 22 }, phLogic: { min_pH: 5.5, max_pH: 8.0 }, releaseType: 'moderate' },
+  { label: 'Potassium Thiosulfate', nutrientContent: { Potassium: 25, Sulphur: 17 }, phLogic: { min_pH: 5.0, max_pH: 8.0 }, releaseType: 'fast' },
+  { label: 'Potassium Carbonate', nutrientContent: { Potassium: 55 }, phLogic: { min_pH: 5.5, max_pH: 7.5 }, releaseType: 'fast' },
+  { label: 'Potassium Acetate', nutrientContent: { Potassium: 25 }, phLogic: { min_pH: 5.5, max_pH: 8.0 }, releaseType: 'fast' },
+  { label: 'Wood Ash', nutrientContent: { Potassium: 5, Calcium: 10, Magnesium: 2, Phosphorus: 1 }, phLogic: { min_pH: 5.0, max_pH: 7.0 }, releaseType: 'slow' },
+  { label: 'Chicken Manure', nutrientContent: { Phosphorus: 2.5, Nitrogen: 3, Potassium: 2 }, phLogic: { min_pH: 5.0, max_pH: 8.0 }, releaseType: 'slow' },
+  { label: 'Dolomitic Lime', nutrientContent: { Calcium: 21, Magnesium: 11 }, phLogic: { min_pH: null, max_pH: 6.5 }, releaseType: 'slow' },
+  { label: 'Kieserite (Magnesium Sulfate Monohydrate)', nutrientContent: { Magnesium: 16, Sulphur: 22 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'moderate' },
+  { label: 'Epsom Salt (Magnesium Sulfate Heptahydrate)', nutrientContent: { Magnesium: 10, Sulphur: 13 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'fast' },
+  { label: 'Langbeinite', nutrientContent: { Potassium: 22, Magnesium: 11, Sulphur: 22 }, phLogic: { min_pH: 5.5, max_pH: 8.0 }, releaseType: 'moderate' },
+  { label: 'Potassium Magnesium Sulfate', nutrientContent: { Potassium: 22, Magnesium: 11, Sulphur: 22 }, phLogic: { min_pH: 5.5, max_pH: 8.0 }, releaseType: 'moderate' },
+  { label: 'Thermophosphate', nutrientContent: { Calcium: 20, Magnesium: 2, Phosphorus: 18 }, phLogic: { min_pH: 5.5, max_pH: 7.5 }, releaseType: 'slow' },
+  { label: 'Magnesium Nitrate', nutrientContent: { Magnesium: 10.5, Nitrate: 11 }, phLogic: { min_pH: 5.5, max_pH: 8.0 }, releaseType: 'fast' },
+  { label: 'Magnesium Chloride', nutrientContent: { Magnesium: 12 }, phLogic: { min_pH: 5.0, max_pH: 8.0 }, releaseType: 'fast' },
+  { label: 'Chicken Manure', nutrientContent: { Phosphorus: 2.5, Nitrogen: 3, Potassium: 2, Calcium: 3, Magnesium: 1 }, phLogic: { min_pH: 5.0, max_pH: 8.0 }, releaseType: 'slow' },
+  { label: 'Sulfur-Rich Compost', nutrientContent: { Sulphur: 2, Calcium: 3, Magnesium: 2, Potassium: 2, Phosphorus: 1, Nitrogen: 2 }, phLogic: { min_pH: 5.0, max_pH: 8.0 }, releaseType: 'slow' },
+  { label: 'Elemental Sulfur', nutrientContent: { Sulphur: 90 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'very slow' },
+  { label: 'Gypsum (Calcium Sulfate)', nutrientContent: { Calcium: 23, Sulphur: 18 }, phLogic: { min_pH: 5.8, max_pH: 7.5 }, releaseType: 'moderate' },
+  { label: 'Ammonium Sulfate', nutrientContent: { Ammonium: 21, Sulphur: 24 }, phLogic: { min_pH: 5.0, max_pH: 8.5 }, releaseType: 'fast' },
+  { label: 'Potassium Sulfate (Sulfate of Potash)', nutrientContent: { Potassium: 50, Sulphur: 17 }, phLogic: { min_pH: 5.0, max_pH: 8.5 }, releaseType: 'fast' },
+  { label: 'Langbeinite', nutrientContent: { Potassium: 22, Magnesium: 11, Sulphur: 22 }, phLogic: { min_pH: 5.5, max_pH: 8.0 }, releaseType: 'moderate' },
+  { label: 'Potassium Magnesium Sulfate', nutrientContent: { Potassium: 22, Magnesium: 11, Sulphur: 22 }, phLogic: { min_pH: 5.5, max_pH: 8.0 }, releaseType: 'moderate' },
+  { label: 'Ammonium Thiosulfate', nutrientContent: { Sulphur: 26, Ammonium: 12 }, phLogic: { min_pH: 5.0, max_pH: 8.5 }, releaseType: 'moderate' },
+  { label: 'Sulfur-Coated Urea', nutrientContent: { Sulphur: 15, Nitrogen: 35 }, phLogic: { min_pH: 5.0, max_pH: 8.0 }, releaseType: 'slow' },
+  { label: 'Epsom Salt (Magnesium Sulfate Heptahydrate)', nutrientContent: { Magnesium: 10, Sulphur: 13 }, phLogic: { min_pH: null, max_pH: null }, releaseType: 'fast' },
+  { label: 'Chicken Manure', nutrientContent: { Phosphorus: 2.5, Nitrogen: 3, Potassium: 2, Calcium: 3, Magnesium: 1, Sulphur: 0.5 }, phLogic: { min_pH: 5.0, max_pH: 8.0 }, releaseType: 'slow' },
+
   // Add more as needed
 ];
 
-// Ensure all sulphur fertilizers have a releaseType
-// (This is a patch for any missing releaseType on sulphur fertilizers)
-fertilizerDefs.forEach(fert => {
-  if (
-    fert.nutrientContent &&
-    Object.keys(fert.nutrientContent).some(k => k.toLowerCase() === 'sulphur') &&
-    !fert.releaseType
-  ) {
-    // Assign based on label
-    if (fert.label === 'Elemental Sulfur' || fert.label === 'Elemental Sulphur') fert.releaseType = 'very slow';
-    else if (fert.label === 'Ammonium Sulfate' || fert.label === 'Ammonium Sulphate') fert.releaseType = 'fast';
-    else if (fert.label === 'Gypsum') fert.releaseType = 'moderate';
-    else if (fert.label === 'Kieserite') fert.releaseType = 'fast';
-    else if (fert.label === 'Epsom Salt') fert.releaseType = 'fast';
-    else if (fert.label === 'Sulfate of Potash' || fert.label === 'Potassium Sulphate' || fert.label === 'Potassium Sulfate') fert.releaseType = 'fast';
-    else if (fert.label === 'Ammonium Thiosulfate') fert.releaseType = 'moderate';
-    else if (fert.label === 'Sulphur-Coated Urea') fert.releaseType = 'slow';
-    else if (fert.label === 'Langbeinite') fert.releaseType = 'moderate';
-    else if (fert.label === 'Potassium Magnesium Sulphate') fert.releaseType = 'moderate';
-    else if (fert.label === 'Sulfur-Rich Compost') fert.releaseType = 'slow';
-    else fert.releaseType = 'moderate';
+// After fertilizerDefs is defined, add this code to deduplicate by label:
+const uniqueFertilizerDefs = [];
+const seenLabels = new Set();
+for (const fert of fertilizerDefs) {
+  if (!seenLabels.has(fert.label)) {
+    uniqueFertilizerDefs.push(fert);
+    seenLabels.add(fert.label);
   }
-});
-
-// Ensure all nitrate fertilizers have a releaseType
-fertilizerDefs.forEach(fert => {
-  if (
-    fert.nutrientContent &&
-    Object.keys(fert.nutrientContent).some(k => k.toLowerCase() === 'nitrate') &&
-    !fert.releaseType
-  ) {
-    if (fert.label === 'Calcium Nitrate') fert.releaseType = 'fast';
-    else if (fert.label === 'Potassium Nitrate') fert.releaseType = 'fast';
-    else if (fert.label === 'Ammonium Nitrate') fert.releaseType = 'fast';
-    else if (fert.label === 'Sodium Nitrate') fert.releaseType = 'fast';
-    else if (fert.label === 'Ammonium Sulfate Nitrate') fert.releaseType = 'fast';
-    else if (fert.label === 'Urea Ammonium Nitrate') fert.releaseType = 'fast';
-    else fert.releaseType = 'fast';
-  }
-});
-
-// Ensure all ammonium fertilizers have a releaseType
-fertilizerDefs.forEach(fert => {
-  if (
-    fert.nutrientContent &&
-    Object.keys(fert.nutrientContent).some(k => k.toLowerCase() === 'ammonium') &&
-    !fert.releaseType
-  ) {
-    if (fert.label === 'Ammonium Sulfate') fert.releaseType = 'fast';
-    else if (fert.label === 'Ammonium Nitrate') fert.releaseType = 'fast';
-    else if (fert.label === 'Ammonium Thiosulfate') fert.releaseType = 'moderate';
-    else if (fert.label === 'Monoammonium Phosphate (MAP)') fert.releaseType = 'fast';
-    else if (fert.label === 'Diammonium Phosphate (DAP)') fert.releaseType = 'fast';
-    else if (fert.label === 'Ammonium Sulfate Nitrate') fert.releaseType = 'fast';
-    else if (fert.label === 'Urea Ammonium Nitrate') fert.releaseType = 'fast';
-    else if (fert.label === 'Urea') fert.releaseType = 'fast';
-    else if (fert.label === 'Anhydrous Ammonia') fert.releaseType = 'fast';
-    else fert.releaseType = 'fast';
-  }
-});
-
-// Add Urea if not present
-if (!fertilizerDefs.some(f => f.label === 'Urea')) {
-  fertilizerDefs.push({
-    label: 'Urea',
-    nutrientContent: { Ammonium: 46 },
-    phLogic: { min_pH: null, max_pH: null },
-    releaseType: 'fast'
-  });
 }
+// Use uniqueFertilizerDefs everywhere instead of fertilizerDefs
 
-// Add Chicken Manure if not present
-if (!fertilizerDefs.some(f => f.label === 'Chicken Manure')) {
-  fertilizerDefs.push({
-    label: 'Chicken Manure',
-    nutrientContent: { Phosphorus: 2.5, Nitrogen: 3, Potassium: 2 },
-    phLogic: { min_pH: null, max_pH: null },
-    releaseType: 'slow'
-  });
-}
 
 function getFertilizersForNutrient(nutrient) {
   if (!nutrient) return [];
-  return fertilizerDefs.filter(f =>
+  return uniqueFertilizerDefs.filter(f =>
     f.nutrientContent &&
     Object.keys(f.nutrientContent).some(
       k => k.toLowerCase() === nutrient.toLowerCase()
@@ -213,7 +176,7 @@ const SoilCorrections = ({ nutrients, soilAmendmentsSummary, setSoilAmendmentsSu
     Object.entries(fertSelections).forEach(([nutrient, sels]) => {
       (Array.isArray(sels) ? sels : []).forEach(sel => {
         if (sel.fertLabel && sel.fertLabel !== 'none' && typeof sel.rate === 'number' && sel.rate > 0) {
-          const fert = fertilizerDefs.find(f => f.label === sel.fertLabel);
+          const fert = uniqueFertilizerDefs.find(f => f.label === sel.fertLabel);
           if (fert) {
             const percent = fert.nutrientContent[nutrient] || 0;
             const actualNutrientApplied = (sel.rate * percent) / 100;
@@ -243,7 +206,7 @@ const SoilCorrections = ({ nutrients, soilAmendmentsSummary, setSoilAmendmentsSu
 
   // Handler for fertilizer selection and rate
   function handleApplyFertilizer(nutrient, fertLabel, rate) {
-    const fert = fertilizerDefs.find(f => f.label === fertLabel);
+    const fert = uniqueFertilizerDefs.find(f => f.label === fertLabel);
     if (!fert) return;
     const percent = fert.nutrientContent[nutrient] || 0;
     const actualNutrientApplied = (rate * percent) / 100;
@@ -372,7 +335,7 @@ const SoilCorrections = ({ nutrients, soilAmendmentsSummary, setSoilAmendmentsSu
                         selections.forEach(sel => {
                           if (sel.fertLabel && sel.fertLabel !== 'none') {
                             // Find the fertilizer in the full list (not just availableFerts)
-                            const fert = fertilizerDefs.find(f => f.label === sel.fertLabel);
+                            const fert = uniqueFertilizerDefs.find(f => f.label === sel.fertLabel);
                             if (fert) {
                               const percent = fert.nutrientContent[nutrient.genericName || nutrient.name] || 0;
                               totalAdded += (sel.rate * percent) / 100 / 2.4;
@@ -409,7 +372,7 @@ const SoilCorrections = ({ nutrients, soilAmendmentsSummary, setSoilAmendmentsSu
                         selections.forEach(sel => {
                           if (sel.fertLabel && sel.fertLabel !== 'none') {
                             // Find the fertilizer in the full list (not just availableFerts)
-                            const fert = fertilizerDefs.find(f => f.label === sel.fertLabel);
+                            const fert = uniqueFertilizerDefs.find(f => f.label === sel.fertLabel);
                             if (fert) {
                               const percent = fert.nutrientContent[nutrient.genericName || nutrient.name] || 0;
                               totalAdded += (sel.rate * percent) / 100 / 2.4;
@@ -460,7 +423,7 @@ const SoilCorrections = ({ nutrients, soilAmendmentsSummary, setSoilAmendmentsSu
                         const selections = fertSelections[nutrKey] || [];
                         selections.forEach(sel => {
                           if (sel.fertLabel && sel.fertLabel !== 'none') {
-                            const fert = fertilizerDefs.find(f => f.label === sel.fertLabel);
+                            const fert = uniqueFertilizerDefs.find(f => f.label === sel.fertLabel);
                             if (fert) {
                               const percent = fert.nutrientContent[nutrient.genericName || nutrient.name] || 0;
                               totalAddedPpm += (sel.rate * percent) / 100 / 2.4;
@@ -482,7 +445,7 @@ const SoilCorrections = ({ nutrients, soilAmendmentsSummary, setSoilAmendmentsSu
                                 const selections = fertSelections[nutrKey] || [];
                                 return selections.map((sel, idx) => {
                                   if (sel.fertLabel && sel.fertLabel !== 'none') {
-                                    const fert = fertilizerDefs.find(f => f.label === sel.fertLabel);
+                                    const fert = uniqueFertilizerDefs.find(f => f.label === sel.fertLabel);
                                     if (fert) {
                                       const percent = fert.nutrientContent[nutrient.genericName || nutrient.name] || 0;
                                       if (percent > 0) {
@@ -561,10 +524,10 @@ const SoilCorrections = ({ nutrients, soilAmendmentsSummary, setSoilAmendmentsSu
                             });
                             // Allow up to 15% above target if this nutrient is also deficient, else do not exceed 15% above target
                             const maxAllowed = nObj.ideal * (1 + maxAllowedExcess / 100);
-                            const maxToAdd = maxAllowed - (nObj.current + alreadyAdded);
-                            const maxRate = pct > 0 ? ((maxToAdd * 100 * 2.4) / pct) : Infinity;
-                            if (maxRate < cappedRate) {
-                              cappedRate = Math.max(0, Number(maxRate.toFixed(1)));
+                            const maxToAddInner = Number(maxAllowed) - Number(nObj.current);
+                            const maxRateInner = Number(pct) > 0 ? ((maxToAddInner * 100 * 2.4) / Number(pct)) : Infinity;
+                            if (maxRateInner < cappedRate) {
+                              cappedRate = Math.max(0, Number(maxRateInner.toFixed(1)));
                               limitingNutrient = otherNutrient;
                             }
                           });
@@ -639,10 +602,10 @@ const SoilCorrections = ({ nutrients, soilAmendmentsSummary, setSoilAmendmentsSu
                                       const nObj = nutrients.find(nu => (nu.genericName || nu.name) === otherNutrient);
                                       if (!nObj) return;
                                       const maxAllowed = nObj.ideal * (1 + maxAllowedExcess / 100);
-                                      const maxToAdd = maxAllowed - nObj.current;
-                                      const maxRate = pct > 0 ? ((maxToAdd * 100 * 2.4) / pct) : Infinity;
-                                      if (maxRate < cappedRate) {
-                                        cappedRate = Math.max(0, Number(maxRate.toFixed(1)));
+                                      const maxToAddInner = Number(maxAllowed) - Number(nObj.current);
+                                      const maxRateInner = Number(pct) > 0 ? ((maxToAddInner * 100 * 2.4) / Number(pct)) : Infinity;
+                                      if (maxRateInner < cappedRate) {
+                                        cappedRate = Math.max(0, Number(maxRateInner.toFixed(1)));
                                         limitingNutrient = otherNutrient;
                                       }
                                     });
@@ -694,10 +657,10 @@ const SoilCorrections = ({ nutrients, soilAmendmentsSummary, setSoilAmendmentsSu
                                       const nObj = nutrients.find(nu => (nu.genericName || nu.name) === otherNutrient);
                                       if (!nObj) return;
                                       const maxAllowed = nObj.ideal * (1 + maxAllowedExcess / 100);
-                                      const maxToAdd = maxAllowed - nObj.current;
-                                      const maxRate = pct > 0 ? ((maxToAdd * 100 * 2.4) / pct) : Infinity;
-                                      if (maxRate < cappedRate) {
-                                        cappedRate = Math.max(0, Number(maxRate.toFixed(1)));
+                                      const maxToAddInner = Number(maxAllowed) - Number(nObj.current);
+                                      const maxRateInner = Number(pct) > 0 ? ((maxToAddInner * 100 * 2.4) / Number(pct)) : Infinity;
+                                      if (maxRateInner < cappedRate) {
+                                        cappedRate = Math.max(0, Number(maxRateInner.toFixed(1)));
                                         limitingNutrient = otherNutrient;
                                       }
                                     });
@@ -879,7 +842,7 @@ const SoilCorrections = ({ nutrients, soilAmendmentsSummary, setSoilAmendmentsSu
         {/* Selected Products summary card for soil corrections */}
         {Object.entries(fertSelections).flatMap(([nutrient, sels]) =>
           (Array.isArray(sels) ? sels : []).filter(sel => sel.fertLabel && sel.fertLabel !== 'none').map((sel, idx) => {
-            const fert = fertilizerDefs.find(f => f.label === sel.fertLabel);
+            const fert = uniqueFertilizerDefs.find(f => f.label === sel.fertLabel);
             if (!fert) return null;
             const contentString = Object.entries(fert.nutrientContent)
               .map(([k, v]) => `${k} ${v}%`).join(', ');
