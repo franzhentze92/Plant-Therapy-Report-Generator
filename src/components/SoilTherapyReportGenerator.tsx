@@ -2950,6 +2950,58 @@ baseSaturationNames.forEach(element => {
     // Add more as needed
   };
 
+  // Build a unified fertilizerDescriptions object at the top, including all soil correction fertilizers:
+  const fertilizerDescriptions: Record<string, string> = {
+    'Calcium Nitrate': 'Supplies readily available calcium and nitrate nitrogen for rapid plant uptake.',
+    'Potassium Nitrate': 'Provides both potassium and nitrate nitrogen for balanced plant growth.',
+    'Sodium Nitrate (Chile Nitrate)': 'Fast-acting source of nitrate nitrogen and sodium for specific crop needs.',
+    'Ammonium Nitrate': 'Balanced source of ammonium and nitrate nitrogen for vigorous growth.',
+    'UAN Solution (Urea Ammonium Nitrate)': 'Liquid blend of urea and ammonium nitrate for flexible nitrogen application.',
+    'Calcium Ammonium Nitrate (CAN)': 'Supplies calcium, ammonium, and nitrate nitrogen for improved yield.',
+    'Magnesium Nitrate': 'Provides magnesium and nitrate nitrogen for healthy growth.',
+    'Zinc Nitrate': 'Supplies zinc and nitrate nitrogen for correcting deficiencies.',
+    'Iron Nitrate': 'Provides iron and nitrate nitrogen for chlorophyll production.',
+    'Copper Nitrate': 'Supplies copper and nitrate nitrogen for enzyme activation.',
+    'Ammonium Sulfate': 'Provides ammonium nitrogen and sulfur for rapid green-up and protein formation.',
+    'Monoammonium Phosphate (MAP)': 'Supplies phosphorus and ammonium nitrogen for early root and shoot growth.',
+    'Diammonium Phosphate (DAP)': 'Provides phosphorus and ammonium nitrogen for vigorous early plant development.',
+    'Ammonium Thiosulfate': 'Liquid source of ammonium nitrogen and sulfur for fertigation.',
+    'Ammonium Polyphosphate (APP)': 'Liquid phosphorus and ammonium nitrogen for starter and fertigation.',
+    'Ammonium Chloride': 'Supplies ammonium nitrogen and chloride for specific crop needs.',
+    'Ammonium Acetate': 'Source of ammonium nitrogen for specialty applications.',
+    'Triple Superphosphate (TSP)': 'Delivers concentrated phosphorus and calcium for strong root development.',
+    'Rock Phosphate': 'Slow-release source of phosphorus for long-term soil fertility.',
+    'Soft Rock Phosphate': 'Natural source of phosphorus and calcium for organic systems.',
+    'Thermophosphate': 'Slow-release phosphate with calcium and magnesium.',
+    'Bone Meal': 'Organic source of phosphorus and calcium for soil health.',
+    'Fish Bone Meal': 'Organic phosphorus, calcium, and nitrogen for soil fertility.',
+    'Chicken Manure': 'Organic fertilizer providing N, P, K, and organic matter.',
+    'Agricultural Limestone (CaCO₃)': 'Raises soil pH and supplies calcium to improve soil structure and nutrient availability.',
+    'Dolomitic Lime': 'Raises soil pH and supplies both calcium and magnesium for balanced nutrition.',
+    'Gypsum (Calcium Sulfate)': 'Provides calcium and sulfur without affecting soil pH; improves soil structure and drainage.',
+    'Calcium Chloride': 'Supplies fast-acting calcium for correcting deficiencies.',
+    'Muriate of Potash (Potassium Chloride)': 'Delivers high levels of potassium for improved crop yield and quality.',
+    'Langbeinite': 'Supplies potassium, magnesium, and sulfur for balanced nutrition.',
+    'Potassium Magnesium Sulfate': 'Provides potassium, magnesium, and sulfur for soil fertility.',
+    'Potassium Thiosulfate': 'Liquid potassium and sulfur for fertigation.',
+    'Potassium Carbonate': 'Highly soluble potassium source for rapid correction.',
+    'Potassium Acetate': 'Potassium source for specialty applications.',
+    'Wood Ash': 'Supplies potassium, calcium, magnesium, and phosphorus for soil amendment.',
+    'Sulfur-Rich Compost': 'Organic source of sulfur, calcium, magnesium, potassium, phosphorus, and nitrogen.',
+    'Elemental Sulfur': 'Lowers soil pH and supplies sulfur for protein synthesis and enzyme function.',
+    'Potassium Sulfate (Sulfate of Potash)': 'Supplies potassium and sulfur for improved crop quality and disease resistance.',
+    // Add more as needed
+  };
+
+  // Helper for robust description lookup
+  function getFertilizerDescription(label: string): string | undefined {
+    if (fertilizerDescriptions[label]) return fertilizerDescriptions[label];
+    // Try case-insensitive match
+    const foundKey = Object.keys(fertilizerDescriptions).find(k => k.toLowerCase() === label.toLowerCase());
+    if (foundKey) return fertilizerDescriptions[foundKey];
+    return undefined;
+  }
+
   return (
     <div className="w-full max-w-screen-2xl mx-auto">
       {/* TEMP: Render SoilAnalysisChart at the top for testing */}
@@ -3409,7 +3461,7 @@ baseSaturationNames.forEach(element => {
                             <ul className="ml-6 mt-1">
                               {soilAmendmentsSummary.map((item, idx) => {
                                 const prod = productList.find(p => p.label === item.fertilizer);
-                                const desc = prod?.description || soilAmendmentDescriptions[item.fertilizer];
+                                const desc = prod?.description || getFertilizerDescription(item.fertilizer);
                                 return (
                                   <li key={idx} className="mb-1">
                                     <span className="font-semibold text-blue-700">
